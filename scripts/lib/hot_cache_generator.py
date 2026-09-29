@@ -22,13 +22,19 @@ from scripts.lib.atomic_write import atomic_write
 from scripts.lib.locking import MemoryLock
 from scripts.lib.sections import get_section
 
-CHANGELOG_LINE_RE = re.compile(r"^\-?\s*\[?(\d{4}-\d{2}-\d{2})\]?\s*[—\-:]\s*(.+)$")
+# Accepts both the legacy "- YYYY-MM-DD — text" form and the current
+# "[node] LOG YYYY-MM-DD — text" form written by /morning and /end-day.
+CHANGELOG_LINE_RE = re.compile(
+    r"^(?:\[[^\]]+\]\s+LOG\s+|\-?\s*\[?)(\d{4}-\d{2}-\d{2})\]?\s*[—\-:]\s*(.+)$"
+)
 DECISION_RE = re.compile(
-    r"^\[(?P<node>[^\]]+)\]\s+DECISION\s*\((?P<date>\d{4}-\d{2}-\d{2})\):\s*(?P<body>.+?)"
-    r"(?:\s*\[confirmed:(?P<confirmed>\d{4}-\d{2}-\d{2})\])?\s*$",
+    r"^\[(?P<node>[^\]]+)\]\s+DECISION\s*\((?P<date>\d{4}-\d{2}-\d{2})[^)]*\)"
+    r"(?:\s*\[confirmed:(?P<confirmed>\d{4}-\d{2}-\d{2})\])?(?:\s*\[[a-z]+:[^\]]*\])*"
+    r":\s*(?P<body>.+?)\s*$",
     re.MULTILINE,
 )
-OPEN_THREAD_RE = re.compile(r"^\-\s*\[(?:WAITING:[^\]]+|P[012])\].*$", re.MULTILINE)
+OPEN_THREAD_RE = re.compile(r"^\-\s*(?:\*\*)?\[(?:WAITING:[^\]]+|P[012](?:\s+\d{4}-\d{2}-\d{2})?)\].*$", re.MULTILINE)
+OPEN_SECTION_HEADINGS = ("## Open threads", "## Open Threads", "## Open loops", "## Open Loops", "## Open Operational Threads")
 
 WINDOW_DAYS = 7
 
@@ -79,8 +85,8 @@ def _recent_decisions(text: str, cutoff: date) -> list[str]:
 
 
 def _open_threads(text: str, node_id: str) -> list[str]:
-    body = get_section(text, "## Open threads")
-    if not body:
+    body = "\n".join(get_section(text, h) or "" for h in OPEN_SECTION_HEADINGS)
+    if not body.strip():
         return []
     out = []
     for line in body.splitlines():

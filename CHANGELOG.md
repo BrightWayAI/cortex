@@ -4,6 +4,11 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.28.1] — hot.md generator regex hardening (2026-09-29)
+
+### Fixed
+- `scripts/lib/hot_cache_generator.py`'s three parsing regexes had drifted from the changelog/decision/open-thread formats nodes actually use, silently dropping entries out of `hot.md` instead of erroring: `CHANGELOG_LINE_RE` didn't match the current `[node] LOG YYYY-MM-DD — text` form written by `/morning`/`/end-day` (only the legacy `- YYYY-MM-DD — text` form); `DECISION_RE` broke on extra content inside the date parens or trailing tag brackets beyond `[confirmed:...]`; `OPEN_THREAD_RE` missed bolded `**[P1]**` markers and dated `P0`/`P1`/`P2` tags, and open-thread scanning only checked the exact heading `## Open threads`, missing the `## Open Threads` / `## Open loops` / `## Open Loops` / `## Open Operational Threads` variants nodes actually use. Mirrored in `.nucleus-codex-local/plugins/cortex/scripts/lib/hot_cache_generator.py` per the OpenAI-adapter sync convention.
+
 ## [4.28.0] — Nightly-listen loud-failure hardening (2026-09-18)
 
 ### Fixed
