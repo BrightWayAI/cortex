@@ -4,6 +4,14 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.28.2] — Plugin-directory pre-submission fixes (2026-10-15)
+
+### Fixed
+- `hooks/hooks.json`'s SessionStart hook referenced `${PLUGIN_ROOT}`, a variable Claude Code doesn't expand (the correct variable is `${CLAUDE_PLUGIN_ROOT}`) — the hook would have failed to resolve `hooks/session_start.py` at runtime. Corrected to `${CLAUDE_PLUGIN_ROOT}`.
+- `mcp.json`'s OpenAI/Codex MCP server declaration and `docs/ORGANIZATION_DISTRIBUTION.md`'s release checklist both ran `uv run --with 'mcp>=2.2,<3' ...` — an unpinned package range on a package-launcher invocation. Pinned to an exact version (`mcp==2.2.0`) per the Claude plugin directory's pre-submission checklist, which requires exact version pins (not ranges) on every `npx`/`uvx`/`uv run` launcher.
+- Removed the unrecognized `platforms` field from `.claude-plugin/plugin.json` (Claude Code ignores it and flags it as an unknown field at validation).
+- Added the one-step `/plugin marketplace add` + `/plugin install cortex@nucleus` install block to `README.md`'s Quick Start (previously only documented manual zip upload and Claude Code hand-setup).
+
 ## [4.28.1] — hot.md generator regex hardening (2026-09-29)
 
 ### Fixed

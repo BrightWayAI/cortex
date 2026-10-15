@@ -7,7 +7,7 @@
       "args": [
         "run",
         "--with",
-        "mcp>=2.2,<3",
+        "mcp==2.2.0",
         "python",
         "${PLUGIN_ROOT}/adapters/chatgpt_work/server.py",
         "--transport",

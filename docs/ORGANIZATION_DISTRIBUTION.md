@@ -12,7 +12,10 @@ Before publishing a tag or commit for others to install:
    environments, bytecode, and OS metadata are ignored.
 2. Review `git status --short --untracked-files=all` and the staged diff.
 3. Run `python3 scripts/check_repo.py`.
-4. Run `uv run --with 'mcp>=2.2,<3' python scripts/smoke_chatgpt_work.py`.
+4. Run `uv run --with 'mcp==2.2.0' python scripts/smoke_chatgpt_work.py` (confirm
+   2.2.0 is still the intended pin before running; the plugin directory's
+   pre-submission checks require an exact version on every `uv run`/`uvx`
+   launcher, not a range).
 5. Build a shareable archive with
    `python3 scripts/build_release_archive.py --output /tmp/cortex.zip`. Do not
    ZIP or copy the raw working directory; it may contain ignored local settings.

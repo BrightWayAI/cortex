@@ -60,6 +60,13 @@ Next conversation starts
 
 ## Quick Start
 
+### Claude Code / Cowork via the Nucleus marketplace — recommended
+
+```
+/plugin marketplace add BrightWayAI/nucleus
+/plugin install cortex@nucleus
+```
+
 ### Cowork (Claude Desktop) — Full Support
 
 1. Download the plugin zip

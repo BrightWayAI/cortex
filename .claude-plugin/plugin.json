@@ -1,11 +1,10 @@
 {
   "name": "cortex",
   "description": "Cortex. A user-owned Markdown second brain with shared deterministic memory utilities. Works with Claude Code and Cowork, and ships portable adapters for Codex and ChatGPT Work without forking the canonical workflows.",
-  "version": "4.28.1",
+  "version": "4.28.2",
   "author": {
     "name": "BrightWay AI",
     "url": "https://brightwayai.com"
   },
-  "license": "MIT",
-  "platforms": ["cowork", "claude-code"]
+  "license": "MIT"
 }
