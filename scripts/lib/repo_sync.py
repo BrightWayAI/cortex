@@ -326,8 +326,10 @@ def sync(root: Path, host: str | None = None) -> SyncReport:
 
 def _record(root: Path, report: SyncReport) -> None:
     (root / STATUS_FILE).write_text(json.dumps(report.to_dict(), indent=2) + "\n")
-    if report.ok and all(r.action == "noop" for r in report.results):
-        return  # nothing happened: status file only, no log line (and no commit) per tick
+    if report.ok:
+        # Success is recorded in the status file only. A synced log line would dirty the
+        # private repo, so the next tick would commit+push and log again: an endless loop.
+        return
     line = "- {at} {host} {state}: {detail}\n".format(
         at=report.at,
         host=report.host,

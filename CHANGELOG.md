@@ -4,10 +4,10 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
-## [4.29.2] — Quiet no-op sync (2026-10-30)
+## [4.29.2] — Sync log feedback-loop fix (2026-10-30)
 
 ### Fixed
-- `sync` no longer appends to `staged/sync-log.md` on no-op runs, so a 5-minute Mac sync does not create a commit per tick. `.sync-status.json` is still written every run.
+- `sync` appends to `staged/sync-log.md` only on failure or conflict. Logging successful runs into the synced repo made every tick commit and push the previous tick's log line (an endless loop). `.sync-status.json` is still written every run and the Mac job keeps a local log.
 
 ## [4.29.1] — Sync fixes found migrating a live root (2026-10-30)
 
