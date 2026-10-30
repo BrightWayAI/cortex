@@ -4,5 +4,5 @@ approval_policy = "on-request"
 sandbox_mode = "workspace-write"
 
 [sandbox_workspace_write]
-writable_roots = ["/ABSOLUTE/PATH/TO/CORTEX-CONFIG-ROOT"]
+writable_roots = ["/ABSOLUTE/PATH/TO/CORTEX-CONFIG-ROOT"  # e.g. ~/cortex-root (covers .private/ and the symlinked me/staged/archive/briefs/plugins)]
 network_access = false

@@ -28,7 +28,8 @@ The adapter calls `scripts/lib/config_root.py`; precedence remains:
 2. `CORTEX_CONFIG_ROOT`;
 3. `~/.cortex/config-root`;
 4. `~/Documents/.claude-plugin-config-root` (legacy);
-5. `~/Documents/Claude` (backward-compatible default).
+5. `~/cortex-root`, only after `cortex_cli.py bootstrap` created it (cloud-first default);
+6. `~/Documents/Claude` (backward-compatible default).
 
 Existing Claude users should keep the resolved root and do not need a second
 memory directory. New users can set the vendor-neutral pointer and initialize
@@ -117,3 +118,24 @@ python3 scripts/check_repo.py
 
 All adapter tests inject temporary homes and config roots. Do not point test
 commands at a real Cortex memory directory.
+
+## Cloud-first sync (v4.29+)
+
+The config root may be two git checkouts (`memory/` = shared org repo, `.private/` =
+per-user private repo, joined by directory symlinks); see `references/core-contract.md`
+§11B. What this means for Codex:
+
+- Keep `writable_roots` pointed at the resolved root (for example `~/cortex-root`).
+  The `memory/me`, `memory/staged`, `archive`, `briefs`, and `plugins` symlinks all
+  resolve inside that root, so one writable root covers them.
+- The default sandbox has `network_access = false`, so Codex cannot push. On a machine
+  that runs the host sync job (`cortex_cli.py sync` under launchd), that is fine: Codex
+  writes locally and the job pushes within minutes. Do not enable network access just to
+  push; do not `git push` by hand.
+- A Codex surface with no persistent local root (cloud) must run
+  `python3 scripts/cortex_cli.py bootstrap --print-env` first and needs git credentials
+  for both repos plus `CORTEX_ORG_REPO` / `CORTEX_PRIVATE_REPO` (or `--org-repo` /
+  `--private-repo`). That path is untested on Codex.
+- Never edit shared nodes directly once more than one actor writes (§11A); write
+  proposals, then run `cortex_cli.py sync`. A sync conflict is reported with a
+  `conflict/<host>/<ts>` branch, never auto-resolved or force-pushed.

@@ -45,7 +45,8 @@ repository. The portable `mcp.json` launches the official MCP Python SDK with
 1. `CORTEX_CONFIG_ROOT`
 2. `~/.cortex/config-root`
 3. `~/Documents/.claude-plugin-config-root` (legacy)
-4. `~/Documents/Claude` (default)
+4. `~/cortex-root`, only after `cortex_cli.py bootstrap` created it (cloud-first default)
+5. `~/Documents/Claude` (default)
 
 Install Cortex from the repository marketplace in the ChatGPT desktop plugin
 browser, review the read/write capability and hook, and start a new Local Work
@@ -183,3 +184,11 @@ to a remote `streamable-http` URL:
 The repository intentionally stops before those identity-provider and hosting
 choices. The local/tunnel adapter is functional without pretending those
 production controls exist.
+
+## Cloud-first sync (v4.29+)
+
+Cloud Work has no device filesystem, so a cloud-first config root is the supported shape:
+run `python3 scripts/cortex_cli.py bootstrap --print-env` (with `CORTEX_ORG_REPO` /
+`CORTEX_PRIVATE_REPO`) through the Cortex bridge, then `cortex_cli.py sync` after approved
+writes. Git credentials for both repos must be available to the bridge; this is
+host-specific and untested here. See `references/core-contract.md` §11B.
