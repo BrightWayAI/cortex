@@ -212,3 +212,24 @@ class PrivateScopeWriteTest(Fixture, unittest.TestCase):
             resolve_node_path(mem, "staged/../../outside.md")
         with self.assertRaises(PathTraversalError):
             resolve_node_path(mem, "../.private/briefs/x.md")
+
+
+class DiscoveryTest(Fixture, unittest.TestCase):
+    def test_bootstrap_with_no_urls_discovers_marked_checkouts(self):
+        # remotes carry the role markers, as the real repos do
+        org2 = make_remote(self.tmp, "org2", {".cortex-role": "org\n", "CLAUDE.md": "x\n"})
+        priv2 = make_remote(self.tmp, "priv2", {".cortex-role": "private\n", "README.md": "p\n"})
+        sources = self.tmp / "sources"
+        run("git", "clone", "-q", str(org2), str(sources / "nucleus-memory"))
+        run("git", "clone", "-q", str(priv2), str(sources / "cortex-private"))
+        run("git", "clone", "-q", str(self.org), str(sources / "unrelated"))  # no marker
+        info = rs.bootstrap(self.root, search_dirs=[sources])
+        self.assertTrue(info["ok"], info)
+        self.assertEqual((self.root / "memory").resolve(), (sources / "nucleus-memory").resolve())
+        cfg = json.loads((self.root / rs.REPOS_FILE).read_text())
+        self.assertEqual(cfg["org"], str(org2))
+        self.assertEqual(cfg["private"], str(priv2))
+
+    def test_bootstrap_without_anything_still_errors_clearly(self):
+        with self.assertRaises(rs.SyncError):
+            rs.bootstrap(self.root, search_dirs=[self.tmp / "empty"])

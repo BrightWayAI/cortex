@@ -42,6 +42,7 @@ PRIVATE_DIRS = ("me", "staged", "archive", "briefs", "plugins")
 _FORBIDDEN_ORG = re.compile(r"^(me|staged)(/|$)")
 ORG_GITIGNORE_LINES = ("/me", "/staged")
 REPOS_FILE = ".cortex-repos.json"
+ROLE_FILE = ".cortex-role"  # committed marker in each repo: "org" or "private"
 STATUS_FILE = ".sync-status.json"
 SYNC_LOG = "staged/sync-log.md"
 MAX_PUSH_ATTEMPTS = 3
@@ -281,6 +282,40 @@ def ensure_links(root: Path) -> list[str]:
     return made
 
 
+def _safe_remote_url(repo: Path) -> str | None:
+    try:
+        return _remote_url(repo)
+    except SyncError:
+        return None
+
+
+def discover_checkouts(search_dirs: list[Path]) -> dict[str, Path]:
+    """Find already-checked-out repos by their committed `.cortex-role` marker.
+
+    Lets a cloud session that merely has the two repos attached as sources bootstrap
+    with no environment variables and no hard-coded URLs. Looks at each search dir
+    itself and its immediate children.
+    """
+    found: dict[str, Path] = {}
+    for base in search_dirs:
+        try:
+            candidates = [base] + [c for c in sorted(base.iterdir()) if c.is_dir()]
+        except OSError:
+            continue
+        for repo in candidates:
+            marker = repo / ROLE_FILE
+            if not (repo / ".git").exists() or not marker.is_file():
+                continue
+            role = marker.read_text().strip()
+            if role in ("org", "private") and role not in found:
+                found[role] = repo.resolve()
+    return found
+
+
+def _remote_url(repo: Path) -> str:
+    return git(repo, "remote", "get-url", _remote(repo)).stdout.strip()
+
+
 def load_repo_urls(root: Path, org_url: str | None, private_url: str | None) -> tuple[str, str]:
     cfg_path = root / REPOS_FILE
     cfg = json.loads(cfg_path.read_text()) if cfg_path.exists() else {}
@@ -302,8 +337,17 @@ def bootstrap(
     private_url: str | None = None,
     adopt_org: Path | None = None,
     adopt_private: Path | None = None,
+    search_dirs: list[Path] | None = None,
 ) -> dict:
     """Idempotently materialize the config-root from the two repos."""
+    if adopt_org is None or adopt_private is None:
+        found = discover_checkouts(search_dirs or [])
+        adopt_org = adopt_org or found.get("org")
+        adopt_private = adopt_private or found.get("private")
+    if adopt_org is not None and not org_url:
+        org_url = _safe_remote_url(adopt_org)
+    if adopt_private is not None and not private_url:
+        private_url = _safe_remote_url(adopt_private)
     org, priv = load_repo_urls(root, org_url, private_url)
     memory = clone_or_open(org, root / "memory", adopt_org)
     private = clone_or_open(priv, root / ".private", adopt_private)

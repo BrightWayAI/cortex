@@ -222,6 +222,17 @@ def _resolve_sync_root(raw: str | None) -> Path:
     return Path(raw or os.environ.get("CORTEX_CONFIG_ROOT") or Path.home() / "cortex-root").expanduser()
 
 
+def _default_search_dirs() -> list[Path]:
+    home = Path.home()
+    dirs = [Path.cwd(), Path.cwd().parent, home, Path("/home/user"), Path("/workspace")]
+    seen, out = set(), []
+    for d in dirs:
+        if d not in seen and d.is_dir():
+            seen.add(d)
+            out.append(d)
+    return out
+
+
 def cmd_bootstrap(args: argparse.Namespace) -> int:
     import json
 
@@ -233,6 +244,7 @@ def cmd_bootstrap(args: argparse.Namespace) -> int:
             args.private_repo,
             Path(args.adopt_org).expanduser() if args.adopt_org else None,
             Path(args.adopt_private).expanduser() if args.adopt_private else None,
+            _default_search_dirs(),
         )
     except repo_sync.SyncError as exc:
         print(f"FAIL: {exc}", file=sys.stderr)

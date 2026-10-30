@@ -4,6 +4,11 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.29.4] — Environment-free repo discovery (2026-10-30)
+
+### Added
+- `bootstrap` discovers already-checked-out repos by a committed `.cortex-role` marker (`org` / `private`) and reads their remote URLs, so cloud chat/Cowork sessions with both repos attached need no environment variables. Explicit args, env vars and `.cortex-repos.json` still take precedence.
+
 ## [4.29.3] — Cloud dry-run fixes (2026-10-30)
 
 ### Fixed

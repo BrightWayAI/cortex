@@ -133,7 +133,8 @@ canonical definition is **core-contract.md §11B** and the capability is
 What changes for you as a Codex host:
 
 - If no config-root resolves, run `python3 scripts/cortex_cli.py bootstrap --print-env`
-  (needs `CORTEX_ORG_REPO` / `CORTEX_PRIVATE_REPO` or `--org-repo` / `--private-repo`),
+  (finds the two repos by their `.cortex-role` marker when attached as sources; otherwise
+  needs `CORTEX_ORG_REPO` / `CORTEX_PRIVATE_REPO` or `--org-repo` / `--private-repo`),
   then use the printed root. `~/cortex-root` is now a resolution tier (§1 #5).
 - After approved writes, run `python3 scripts/cortex_cli.py sync --root <config-root>`.
   Never force-push; a conflict is pushed to `conflict/<host>/<ts>` and reported.

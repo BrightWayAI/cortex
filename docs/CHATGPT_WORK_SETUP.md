@@ -188,7 +188,7 @@ production controls exist.
 ## Cloud-first sync (v4.29+)
 
 Cloud Work has no device filesystem, so a cloud-first config root is the supported shape:
-run `python3 scripts/cortex_cli.py bootstrap --print-env` (with `CORTEX_ORG_REPO` /
-`CORTEX_PRIVATE_REPO`) through the Cortex bridge, then `cortex_cli.py sync` after approved
+run `python3 scripts/cortex_cli.py bootstrap --print-env` (with both repos attached, or
+`CORTEX_ORG_REPO` / `CORTEX_PRIVATE_REPO`) through the Cortex bridge, then `cortex_cli.py sync` after approved
 writes. Git credentials for both repos must be available to the bridge; this is
 host-specific and untested here. See `references/core-contract.md` §11B.

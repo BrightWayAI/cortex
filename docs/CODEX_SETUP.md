@@ -134,7 +134,8 @@ per-user private repo, joined by directory symlinks); see `references/core-contr
   push; do not `git push` by hand.
 - A Codex surface with no persistent local root (cloud) must run
   `python3 scripts/cortex_cli.py bootstrap --print-env` first and needs git credentials
-  for both repos plus `CORTEX_ORG_REPO` / `CORTEX_PRIVATE_REPO` (or `--org-repo` /
+  for both repos, and either both repos attached as checkouts (found by their
+  `.cortex-role` marker) or `CORTEX_ORG_REPO` / `CORTEX_PRIVATE_REPO` (or `--org-repo` /
   `--private-repo`). That path is untested on Codex.
 - Never edit shared nodes directly once more than one actor writes (§11A); write
   proposals, then run `cortex_cli.py sync`. A sync conflict is reported with a

@@ -275,6 +275,13 @@ holds a synced copy. A config-root is two git checkouts:
 Binding rules, implemented in `scripts/lib/repo_sync.py` and exposed as
 `cortex_cli.py bootstrap` / `sync`:
 
+- **Discover, don't configure:** each repo carries a committed `.cortex-role` marker
+  (`org` or `private`). `bootstrap` finds checkouts by that marker in the working
+  directory, its parent, `$HOME`, `/home/user` and `/workspace`, adopts them, and reads
+  their git remote URLs, so no environment variables and no hard-coded URLs are needed
+  when both repos are attached as session sources. URLs may still be passed with
+  `--org-repo/--private-repo`, `CORTEX_ORG_REPO/CORTEX_PRIVATE_REPO`, or
+  `<root>/.cortex-repos.json`; a session with neither sources nor URLs cannot bootstrap.
 - **Materialize:** a workflow on a host with no resolved root runs
   `bootstrap` (idempotent clone/adopt, fast-forward pull, link creation,
   derived `index.md`/`hot.md` regeneration) before anything else.
