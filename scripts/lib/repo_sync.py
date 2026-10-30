@@ -113,7 +113,23 @@ def _remote(repo: Path) -> str:
 
 
 def _branch(repo: Path) -> str:
-    return git(repo, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+    name = git(repo, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+    if name != "HEAD":
+        return name
+    # Detached HEAD (cloud source checkouts): re-attach to the default branch without
+    # moving the commit, so local commits survive and pushes target a real branch.
+    remote = _remote(repo)
+    ref = git(repo, "symbolic-ref", "--short", f"refs/remotes/{remote}/HEAD", check=False).stdout.strip()
+    target = ref.split("/", 1)[1] if "/" in ref else ""
+    if not target:
+        for cand in ("main", "master"):
+            if git(repo, "rev-parse", "--verify", "-q", f"{remote}/{cand}", check=False).returncode == 0:
+                target = cand
+                break
+    if not target:
+        raise SyncError(f"{repo} is on a detached HEAD and no default branch could be determined")
+    git(repo, "checkout", "-q", "-B", target)
+    return target
 
 
 def _dirty(repo: Path) -> bool:

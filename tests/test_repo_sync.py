@@ -184,3 +184,31 @@ class QuietNoopTest(Fixture, unittest.TestCase):
         rs.sync(self.root, "h")
         after = run("git", "rev-list", "--count", "HEAD", cwd=self.root / ".private").strip()
         self.assertEqual(before, after)
+
+
+class DetachedHeadTest(Fixture, unittest.TestCase):
+    def test_sync_works_from_detached_head(self):
+        self.boot()
+        for repo in (self.root / "memory", self.root / ".private"):
+            run("git", "checkout", "-q", "--detach", cwd=repo)
+        (self.root / "memory/n.md").write_text("n\n")
+        (self.root / "memory/me/x.md").write_text("x\n")
+        report = rs.sync(self.root, "cloud")
+        self.assertTrue(report.ok, report.to_dict())
+        self.assertIn("n.md", run("git", "ls-tree", "-r", "--name-only", "main", cwd=self.org))
+        self.assertIn("me/x.md", run("git", "ls-tree", "-r", "--name-only", "main", cwd=self.priv))
+
+
+class PrivateScopeWriteTest(Fixture, unittest.TestCase):
+    def test_cli_paths_may_go_through_private_symlinks_only(self):
+        from scripts.lib.node_paths import PathTraversalError, resolve_node_path
+
+        self.boot()
+        mem = self.root / "memory"
+        ok = resolve_node_path(mem, "staged/queues/reindex")
+        self.assertEqual(ok, (self.root / ".private/staged/queues/reindex").resolve())
+        self.assertTrue(resolve_node_path(mem, "me/identity.md"))
+        with self.assertRaises(PathTraversalError):
+            resolve_node_path(mem, "staged/../../outside.md")
+        with self.assertRaises(PathTraversalError):
+            resolve_node_path(mem, "../.private/briefs/x.md")

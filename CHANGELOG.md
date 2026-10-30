@@ -4,6 +4,12 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.29.3] — Cloud dry-run fixes (2026-10-30)
+
+### Fixed
+- `sync`/`bootstrap` re-attach a detached HEAD (cloud source checkouts) to the default branch instead of pushing `HEAD:HEAD`.
+- `cortex_cli` node paths may pass through the `memory/me` and `memory/staged` symlinks into the sibling `.private/` checkout (and only there); previously every write to `me/` or `staged/` was rejected as "outside memory root" in the cloud-first layout.
+
 ## [4.29.2] — Sync log feedback-loop fix (2026-10-30)
 
 ### Fixed
