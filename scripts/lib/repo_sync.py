@@ -37,7 +37,9 @@ PRIVATE_LINKS = {
     "plugins": ".private/plugins",
 }
 PRIVATE_DIRS = ("me", "staged", "archive", "briefs", "plugins")
-_FORBIDDEN_ORG = re.compile(r"^(me|staged|archive|briefs|plugins)(/|$)")
+# Inside the org repo only me/ and staged/ are private. Root-level archive/, briefs/
+# and plugins/ live outside the org checkout; memory/archive/ (archived nodes) is org content.
+_FORBIDDEN_ORG = re.compile(r"^(me|staged)(/|$)")
 ORG_GITIGNORE_LINES = ("/me", "/staged")
 REPOS_FILE = ".cortex-repos.json"
 STATUS_FILE = ".sync-status.json"
@@ -103,6 +105,13 @@ def _has_identity(repo: Path, env: dict) -> bool:
     return bool(out.stdout.strip())
 
 
+def _remote(repo: Path) -> str:
+    names = git(repo, "remote").stdout.split()
+    if not names:
+        raise SyncError(f"{repo} has no git remote")
+    return "origin" if "origin" in names else names[0]
+
+
 def _branch(repo: Path) -> str:
     return git(repo, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
 
@@ -113,7 +122,7 @@ def _dirty(repo: Path) -> bool:
 
 def _counts(repo: Path, branch: str) -> tuple[int, int]:
     """(ahead, behind) of HEAD relative to origin/<branch>."""
-    out = git(repo, "rev-list", "--left-right", "--count", f"HEAD...origin/{branch}").stdout.split()
+    out = git(repo, "rev-list", "--left-right", "--count", f"HEAD...{_remote(repo)}/{branch}").stdout.split()
     return int(out[0]), int(out[1])
 
 
@@ -143,18 +152,18 @@ def commit_all(repo: Path, message: str) -> bool:
 def pull_repo(repo: Path, name: str = "") -> RepoResult:
     """Fast-forward, or rebase local commits; abort (never force) on conflict."""
     res = RepoResult(name=name or repo.name)
-    git(repo, "fetch", "-q", "origin")
+    git(repo, "fetch", "-q", _remote(repo))
     branch = _branch(repo)
-    if git(repo, "rev-parse", "--verify", "-q", f"origin/{branch}", check=False).returncode != 0:
+    if git(repo, "rev-parse", "--verify", "-q", f"{_remote(repo)}/{branch}", check=False).returncode != 0:
         return res  # empty remote
     ahead, behind = _counts(repo, branch)
     if behind == 0:
         return res
     if ahead == 0:
-        git(repo, "merge", "--ff-only", f"origin/{branch}")
+        git(repo, "merge", "--ff-only", f"{_remote(repo)}/{branch}")
         res.action = "pulled"
         return res
-    if git(repo, "rebase", f"origin/{branch}", check=False).returncode != 0:
+    if git(repo, "rebase", f"{_remote(repo)}/{branch}", check=False).returncode != 0:
         git(repo, "rebase", "--abort", check=False)
         res.ok, res.action = False, "conflict"
         res.detail = "rebase conflict on pull; local commits kept"
@@ -176,7 +185,7 @@ def push_repo(repo: Path, name: str, host: str) -> RepoResult:
     if ahead == 0:
         return res
     for _ in range(MAX_PUSH_ATTEMPTS):
-        if git(repo, "push", "-q", "origin", f"HEAD:{branch}", check=False).returncode == 0:
+        if git(repo, "push", "-q", _remote(repo), f"HEAD:{branch}", check=False).returncode == 0:
             res.action = "pushed"
             return res
         pulled = pull_repo(repo, name)  # lost a race: re-fetch, rebase, retry
@@ -190,11 +199,11 @@ def _divert_to_conflict_branch(repo: Path, name: str, host: str, branch: str, wh
     safe_host = re.sub(r"[^A-Za-z0-9._-]", "-", host)
     cb = f"conflict/{safe_host}/{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}"
     res = RepoResult(name=name, ok=False, action="conflict", conflict_branch=cb, detail=why)
-    if git(repo, "push", "-q", "origin", f"HEAD:refs/heads/{cb}", check=False).returncode != 0:
+    if git(repo, "push", "-q", _remote(repo), f"HEAD:refs/heads/{cb}", check=False).returncode != 0:
         res.detail += "; ALSO failed to push conflict branch (local commits kept)"
         return res
     # Local commits are now safe on the remote branch; realign main with origin.
-    git(repo, "reset", "-q", "--hard", f"origin/{branch}")
+    git(repo, "reset", "-q", "--hard", f"{_remote(repo)}/{branch}")
     return res
 
 
@@ -206,8 +215,8 @@ def check_org_privacy(repo: Path) -> None:
         if meta.startswith("120000") or _FORBIDDEN_ORG.match(path):
             bad.append(path)
     branch = _branch(repo)
-    if git(repo, "rev-parse", "--verify", "-q", f"origin/{branch}", check=False).returncode == 0:
-        names = git(repo, "diff", "--name-only", f"origin/{branch}..HEAD").stdout.splitlines()
+    if git(repo, "rev-parse", "--verify", "-q", f"{_remote(repo)}/{branch}", check=False).returncode == 0:
+        names = git(repo, "diff", "--name-only", f"{_remote(repo)}/{branch}..HEAD").stdout.splitlines()
         bad += [n for n in names if _FORBIDDEN_ORG.match(n)]
     if bad:
         raise PrivacyViolation(

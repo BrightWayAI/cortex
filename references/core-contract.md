@@ -286,7 +286,9 @@ Binding rules, implemented in `scripts/lib/repo_sync.py` and exposed as
   realigns to origin, and the run reports the conflict in its health line.
   Facts are superseded (§12), not overwritten.
 - **Privacy guard.** `sync` refuses to push the org repo if it tracks any path
-  under `me|staged|archive|briefs|plugins` or any symlink.
+  under `me/` or `staged/` or any symlink. (Root-level `archive/`, `briefs/`,
+  `plugins/` are outside the org checkout; `memory/archive/` is archived *nodes*
+  and is legitimate org content.) The remote name is detected, not assumed `origin`.
 - **Never silent.** Every sync writes `<root>/.sync-status.json` and appends to
   `staged/sync-log.md`; non-zero exit on any failure.
 - Append-only files (`staged/listen-health.md`, `staged/sync-log.md`) use

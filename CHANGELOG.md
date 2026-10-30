@@ -4,6 +4,12 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.29.1] — Sync fixes found migrating a live root (2026-10-30)
+
+### Fixed
+- `sync`/`bootstrap` detect the git remote name instead of assuming `origin` (the live org repo uses `nucleus-memory`).
+- Privacy guard no longer treats `memory/archive/` (archived nodes) as private; only `me/` and `staged/` (plus symlinks) are forbidden in the org repo.
+
 ## [4.29.0] — Cloud-first sync (2026-10-30)
 
 ### Added

@@ -27,7 +27,7 @@ def make_remote(base: Path, name: str, files: dict) -> Path:
     return bare
 
 
-class RepoSyncTest(unittest.TestCase):
+class Fixture:
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp())
         self.org = make_remote(self.tmp, "org", {"CLAUDE.md": "x\n", ".gitignore": "me/\nstaged/\n"})
@@ -37,6 +37,8 @@ class RepoSyncTest(unittest.TestCase):
     def boot(self, root=None):
         return rs.bootstrap(root or self.root, str(self.org), str(self.priv))
 
+
+class RepoSyncTest(Fixture, unittest.TestCase):
     def test_bootstrap_creates_layout_and_is_idempotent(self):
         info = self.boot()
         self.assertTrue(info["ok"])
@@ -66,16 +68,17 @@ class RepoSyncTest(unittest.TestCase):
         self.boot()
         mem = self.root / "memory"
         run("git", "add", "-f", "-A", cwd=mem)  # no-op baseline
-        bad = mem / "archive"
+        bad = mem / "staged"
+        bad.unlink()  # simulate a checkout where staged/ is a real, trackable dir
         bad.mkdir()
         (bad / "raw.md").write_text("raw\n")
-        run("git", "add", "-f", "archive/raw.md", cwd=mem)
+        run("git", "add", "-f", "staged/raw.md", cwd=mem)
         run("git", "commit", "-q", "-m", "oops", cwd=mem)
         with self.assertRaises(rs.PrivacyViolation):
             rs.check_org_privacy(mem)
         report = rs.sync(self.root, host="h1")
         self.assertFalse(report.ok)
-        self.assertNotIn("archive/raw.md", run("git", "ls-tree", "-r", "--name-only", "main", cwd=self.org))
+        self.assertNotIn("staged/raw.md", run("git", "ls-tree", "-r", "--name-only", "main", cwd=self.org))
 
     def test_privacy_guard_blocks_tracked_symlink(self):
         self.boot()
@@ -134,7 +137,7 @@ if __name__ == "__main__":
     unittest.main()
 
 
-class AdoptAndResolveTest(RepoSyncTest):
+class AdoptAndResolveTest(Fixture, unittest.TestCase):
     def test_adopt_existing_checkouts(self):
         org_co = self.tmp / "nucleus-memory"
         priv_co = self.tmp / "cortex-private"
@@ -156,3 +159,17 @@ class AdoptAndResolveTest(RepoSyncTest):
         self.boot(home / "cortex-root")
         res = resolve_config_root(home=home)
         self.assertEqual(res.path, home / "cortex-root")
+
+
+class RemoteNameTest(Fixture, unittest.TestCase):
+    def test_nonstandard_remote_name_and_memory_archive_is_not_private(self):
+        self.boot()
+        mem = self.root / "memory"
+        run("git", "remote", "rename", "origin", "nucleus-memory", cwd=mem)
+        (mem / "archive").mkdir()
+        (mem / "archive/old-node.md").write_text("archived node\n")
+        (mem / "n.md").write_text("n\n")
+        report = rs.sync(self.root, "mac")
+        self.assertTrue(report.ok, report.to_dict())
+        files = run("git", "ls-tree", "-r", "--name-only", "main", cwd=self.org).split()
+        self.assertIn("archive/old-node.md", files)
