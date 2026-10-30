@@ -173,3 +173,14 @@ class RemoteNameTest(Fixture, unittest.TestCase):
         self.assertTrue(report.ok, report.to_dict())
         files = run("git", "ls-tree", "-r", "--name-only", "main", cwd=self.org).split()
         self.assertIn("archive/old-node.md", files)
+
+
+class QuietNoopTest(Fixture, unittest.TestCase):
+    def test_noop_sync_writes_no_log_line_and_no_commit(self):
+        self.boot()
+        rs.sync(self.root, "h")  # may commit the initial symlink/gitignore state
+        before = run("git", "rev-list", "--count", "HEAD", cwd=self.root / ".private").strip()
+        rs.sync(self.root, "h")
+        rs.sync(self.root, "h")
+        after = run("git", "rev-list", "--count", "HEAD", cwd=self.root / ".private").strip()
+        self.assertEqual(before, after)
