@@ -23,6 +23,11 @@ from scripts.lib.config_root import ConfigRootError, resolve_config_root  # noqa
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_ROOT = "~/cortex-root"
+# macOS prompts (TCC) for these and cloud-syncs some of them; background jobs
+# and sandboxed hosts then fail silently. Warn, never refuse: existing users
+# legitimately live here.
+_PROTECTED_DIRS = ("Documents", "Desktop", "Downloads", "Library/Mobile Documents")
 CODEX_MEMORY_SHIM = (
     "# Codex memory entrypoint\n\n"
     "This config root predates the Codex adapter. Read `CLAUDE.md` in this "
@@ -43,6 +48,7 @@ class ConfigureResult:
     pointer_changed: bool
     initialized_files: tuple[str, ...]
     resolution_warning: str | None = None
+    location_warning: str | None = None
 
     def as_dict(self) -> dict[str, object]:
         return {
@@ -51,6 +57,7 @@ class ConfigureResult:
             "pointer_changed": self.pointer_changed,
             "initialized_files": list(self.initialized_files),
             "resolution_warning": self.resolution_warning,
+            "location_warning": self.location_warning,
         }
 
 
@@ -171,12 +178,25 @@ def configure_cortex(
                 )
 
     return ConfigureResult(
+        location_warning=_location_warning(home, target),
         config_root=target,
         pointer_path=pointer_path,
         pointer_changed=pointer_changed,
         initialized_files=tuple(initialized),
         resolution_warning=warning,
     )
+
+
+def _location_warning(home: Path, target: Path) -> str | None:
+    for name in _PROTECTED_DIRS:
+        protected = home / name
+        if target == protected or protected in target.parents:
+            return (
+                f"{target} is inside ~/{name}, which macOS protects and may sync to the cloud. "
+                f"Scheduled jobs and sandboxed hosts can lose access to it; "
+                f"{DEFAULT_ROOT} is the recommended location."
+            )
+    return None
 
 
 def _run_cortex_cli(
@@ -218,8 +238,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--config-root",
-        required=True,
-        help="Absolute path (or ~/...) that will own memory/, archive/, and plugin config",
+        default=DEFAULT_ROOT,
+        help=f"Absolute path (or ~/...) that will own memory/, archive/, and plugin config (default {DEFAULT_ROOT})",
     )
     parser.add_argument(
         "--home",
@@ -262,6 +282,8 @@ def main(argv: list[str] | None = None) -> int:
         print("Initialized: no new files (existing content preserved)")
     if result.resolution_warning:
         print(f"WARNING: {result.resolution_warning}", file=sys.stderr)
+    if result.location_warning:
+        print(f"WARNING: {result.location_warning}", file=sys.stderr)
     return 0
 
 

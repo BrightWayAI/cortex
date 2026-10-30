@@ -19,6 +19,16 @@ Resolve `<config-root>` through explicit override → `CORTEX_CONFIG_ROOT` →
 malformed higher-priority pointer is an error. Request access only to the resolved
 directory.
 
+**Fresh install (no override, env var or pointer file resolves):** do not fall through
+to a Documents-based default. Propose `~/cortex-root`, show the exact path, and on
+confirmation run `python3 scripts/configure_cortex.py` (it writes
+`~/.cortex/config-root`, mirrors the legacy pointer, and seeds `memory/`). If the user
+picks a path under `~/Documents`, `~/Desktop`, `~/Downloads` or iCloud, relay the
+configurator's location warning and recommend `~/cortex-root` once before accepting
+their choice. To sync across machines or run scheduled cloud jobs, offer
+`cortex_cli.py bootstrap` with their org and private repos afterwards (see
+`references/core-contract.md` §11B); never create those repos without asking.
+
 Detect installed plugins through the host's manifest/plugin API when available:
 
 - Cowork / Claude Code — installed plugin catalog or visible plugin manifests.

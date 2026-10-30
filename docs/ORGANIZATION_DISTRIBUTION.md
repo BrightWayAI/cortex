@@ -53,7 +53,7 @@ Each member needs ChatGPT desktop and `uv`. They should start a new Local Work
 chat after installation and choose their own private memory location:
 
 ```text
-@Cortex configure my memory at ~/Documents/Cortex. Show me the exact path and
+@Cortex configure my memory at ~/cortex-root. Show me the exact path and
 ask for confirmation before creating anything.
 ```
 
@@ -61,7 +61,7 @@ Equivalent terminal setup:
 
 ```bash
 python3 scripts/configure_cortex.py \
-  --config-root "$HOME/Documents/Cortex"
+  --config-root "$HOME/cortex-root"
 ```
 
 This creates `~/.cortex/config-root` and a minimal memory nucleus. Existing

@@ -25,13 +25,13 @@ first-time bootstrap.
 
 The pointer doesn't exist, so this is the user's first plugin setup of any kind. Prompt:
 
-> "First-time Nucleus setup. Where should the shared config root live? Pick a folder you control (for example `~/Documents/Cortex/`). It will contain private identity/voice files under `memory/me/`, shared memory nodes, and a `plugins/` settings directory."
+> "First-time Nucleus setup. Where should the shared config root live? Recommended: `~/cortex-root` (press enter to accept). Avoid `~/Documents`, `~/Desktop`, `~/Downloads` and iCloud folders: macOS prompts for access and cloud sync can lock files, so scheduled jobs and sandboxed hosts lose access. It will contain private identity/voice files under `memory/me/`, shared memory nodes, and a `plugins/` settings directory."
 
 Once the user provides the path:
 
 1. Ensure access to `<path>`. If running in Cowork and the folder isn't already mounted in this session, call `request_cowork_directory(<path>)`. If running in Claude Code or another environment with direct filesystem access, no mount call is needed — proceed to read or write the file.
 2. Invoke the bundled deterministic configurator:
-   `python3 scripts/configure_cortex.py --config-root <path>`. It creates the
+   `python3 scripts/configure_cortex.py --config-root <path>` (omit `--config-root` to use `~/cortex-root`). It creates the
    vendor-neutral pointer (`~/.cortex/config-root`, primary) atomically, mirrors it
    to the legacy pointer (`~/Documents/.claude-plugin-config-root`, fallback for
    hosts/plugins that haven't migrated), creates `memory/me/` and `plugins/` if

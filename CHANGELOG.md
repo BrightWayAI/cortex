@@ -4,6 +4,13 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.29.5] — New-user root placement (2026-10-30)
+
+### Changed
+- First-run setup now defaults to `~/cortex-root` (`configure_cortex.py` `--config-root` is optional; `/setup-identity`, `/start-nucleus` and all setup docs recommend it) instead of `~/Documents/Cortex`.
+- `configure_cortex.py` warns (does not refuse) when the chosen root is under `~/Documents`, `~/Desktop`, `~/Downloads` or iCloud, where macOS permission prompts and cloud sync break scheduled and sandboxed runs.
+- `/start-nucleus` Step 0 handles fresh installs explicitly rather than falling through to the `~/Documents/Claude` legacy default; existing roots are untouched.
+
 ## [4.29.4] — Environment-free repo discovery (2026-10-30)
 
 ### Added

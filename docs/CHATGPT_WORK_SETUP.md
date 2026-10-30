@@ -70,13 +70,13 @@ New users should choose a private local directory. The recommended setup is:
 
 ```bash
 python3 scripts/configure_cortex.py \
-  --config-root "$HOME/Documents/Cortex"
+  --config-root "$HOME/cortex-root"
 ```
 
 The same operation is available inside a Local Work chat:
 
 ```text
-@Cortex configure my memory at ~/Documents/Cortex. Show me the exact path and
+@Cortex configure my memory at ~/cortex-root. Show me the exact path and
 ask for confirmation before creating anything.
 ```
 

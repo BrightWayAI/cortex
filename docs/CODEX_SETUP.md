@@ -37,7 +37,7 @@ only missing starter files with:
 
 ```bash
 python3 scripts/configure_cortex.py \
-  --config-root "$HOME/Documents/Cortex"
+  --config-root "$HOME/cortex-root"
 ```
 
 This writes `~/.cortex/config-root`. It refuses unsafe paths and will not

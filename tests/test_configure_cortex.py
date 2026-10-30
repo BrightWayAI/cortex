@@ -13,6 +13,22 @@ from scripts.lib.config_root import resolve_config_root
 ROOT = Path(__file__).resolve().parent.parent
 
 
+class LocationDefaultsTests(unittest.TestCase):
+    def test_default_root_is_cortex_root_without_warning(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            result = configure_cortex(home=home, config_root="~/cortex-root", environ={}, repo_root=ROOT)
+            self.assertEqual(home / "cortex-root", result.config_root)
+            self.assertIsNone(result.location_warning)
+
+    def test_documents_location_warns_but_succeeds(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            result = configure_cortex(home=home, config_root="~/Documents/Cortex", environ={}, repo_root=ROOT)
+            self.assertIn("~/Documents", result.location_warning or "")
+            self.assertTrue((home / "Documents" / "Cortex" / "memory").is_dir())
+
+
 class ConfigureCortexTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()

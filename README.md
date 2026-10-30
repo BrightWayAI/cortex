@@ -82,7 +82,7 @@ archive a raw working directory containing ignored local settings.
 
 **Minimal setup (no hooks):**
 1. Copy the contents of `claude-code/INSTRUCTIONS.md` into your `~/.claude/CLAUDE.md` (global) or project-level `CLAUDE.md`
-2. `mkdir -p ~/Documents/Claude/memory`
+2. `python3 scripts/configure_cortex.py` (creates `~/cortex-root` and the shared pointer)
 3. Start a new Claude Code session. Done.
 
 **With hooks (recommended):**
@@ -131,13 +131,13 @@ New users can configure Cortex in either of two equivalent ways:
 
 ```bash
 python3 scripts/configure_cortex.py \
-  --config-root "$HOME/Documents/Cortex"
+  --config-root "$HOME/cortex-root"
 ```
 
 Or, after installing the plugin:
 
 ```text
-@Cortex configure my memory at ~/Documents/Cortex. Show me the exact path and
+@Cortex configure my memory at ~/cortex-root. Show me the exact path and
 ask for confirmation before creating anything.
 ```
 
