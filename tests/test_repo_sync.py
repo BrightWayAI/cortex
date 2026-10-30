@@ -1,0 +1,158 @@
+import json
+import os
+import subprocess
+import tempfile
+import unittest
+from pathlib import Path
+
+from scripts.lib import repo_sync as rs
+
+
+def run(*cmd, cwd=None):
+    env = dict(os.environ, GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@t", GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@t")
+    return subprocess.run(cmd, cwd=cwd, check=True, capture_output=True, text=True, env=env).stdout
+
+
+def make_remote(base: Path, name: str, files: dict) -> Path:
+    bare = base / f"{name}.git"
+    run("git", "init", "-q", "--bare", "-b", "main", str(bare))
+    seed = base / f"{name}-seed"
+    run("git", "clone", "-q", str(bare), str(seed))
+    for rel, body in files.items():
+        (seed / rel).parent.mkdir(parents=True, exist_ok=True)
+        (seed / rel).write_text(body)
+    run("git", "add", "-A", cwd=seed)
+    run("git", "commit", "-q", "-m", "seed", cwd=seed)
+    run("git", "push", "-q", "origin", "HEAD:main", cwd=seed)
+    return bare
+
+
+class RepoSyncTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.org = make_remote(self.tmp, "org", {"CLAUDE.md": "x\n", ".gitignore": "me/\nstaged/\n"})
+        self.priv = make_remote(self.tmp, "priv", {"README.md": "p\n"})
+        self.root = self.tmp / "root"
+
+    def boot(self, root=None):
+        return rs.bootstrap(root or self.root, str(self.org), str(self.priv))
+
+    def test_bootstrap_creates_layout_and_is_idempotent(self):
+        info = self.boot()
+        self.assertTrue(info["ok"])
+        for rel in rs.PRIVATE_LINKS:
+            self.assertTrue((self.root / rel).is_symlink(), rel)
+        (self.root / "memory/me/identity.md").write_text("me\n")
+        self.assertTrue((self.root / ".private/me/identity.md").exists())
+        again = self.boot()
+        self.assertEqual(again["links_created"], [])
+        self.assertIn("/me", (self.root / "memory/.gitignore").read_text())
+
+    def test_private_content_never_reaches_org(self):
+        self.boot()
+        (self.root / "memory/me/identity.md").write_text("secret\n")
+        (self.root / "memory/staged/draft.md").write_text("draft\n")
+        (self.root / "memory/person.md").write_text("shared\n")
+        report = rs.sync(self.root, host="h1")
+        self.assertTrue(report.ok, report.to_dict())
+        org_files = run("git", "ls-tree", "-r", "--name-only", "main", cwd=self.org).split()
+        self.assertIn("person.md", org_files)
+        self.assertFalse([f for f in org_files if f.startswith(("me", "staged"))], org_files)
+        priv_files = run("git", "ls-tree", "-r", "--name-only", "main", cwd=self.priv).split()
+        self.assertIn("me/identity.md", priv_files)
+        self.assertIn("staged/draft.md", priv_files)
+
+    def test_privacy_guard_blocks_tracked_private_path(self):
+        self.boot()
+        mem = self.root / "memory"
+        run("git", "add", "-f", "-A", cwd=mem)  # no-op baseline
+        bad = mem / "archive"
+        bad.mkdir()
+        (bad / "raw.md").write_text("raw\n")
+        run("git", "add", "-f", "archive/raw.md", cwd=mem)
+        run("git", "commit", "-q", "-m", "oops", cwd=mem)
+        with self.assertRaises(rs.PrivacyViolation):
+            rs.check_org_privacy(mem)
+        report = rs.sync(self.root, host="h1")
+        self.assertFalse(report.ok)
+        self.assertNotIn("archive/raw.md", run("git", "ls-tree", "-r", "--name-only", "main", cwd=self.org))
+
+    def test_privacy_guard_blocks_tracked_symlink(self):
+        self.boot()
+        mem = self.root / "memory"
+        (mem / "link").symlink_to("../.private/me")
+        run("git", "add", "link", cwd=mem)
+        with self.assertRaises(rs.PrivacyViolation):
+            rs.check_org_privacy(mem)
+
+    def test_two_hosts_converge_without_force(self):
+        self.boot()
+        other = self.tmp / "other"
+        self.boot(other)
+        (self.root / "memory/a.md").write_text("a\n")
+        (other / "memory/b.md").write_text("b\n")
+        self.assertTrue(rs.sync(self.root, "mac").ok)
+        self.assertTrue(rs.sync(other, "cloud").ok)  # must rebase over mac's push
+        self.assertTrue(rs.sync(self.root, "mac").ok)
+        self.assertTrue((self.root / "memory/b.md").exists())
+        self.assertTrue((other / "memory/a.md").exists())
+
+    def test_conflict_goes_to_branch_and_main_is_untouched(self):
+        self.boot()
+        other = self.tmp / "other"
+        self.boot(other)
+        (self.root / "memory/CLAUDE.md").write_text("mac edit\n")
+        (other / "memory/CLAUDE.md").write_text("cloud edit\n")
+        self.assertTrue(rs.sync(self.root, "mac").ok)
+        report = rs.sync(other, "cloud")
+        self.assertFalse(report.ok)
+        org = next(r for r in report.results if r.name == "org")
+        self.assertEqual(org.action, "conflict")
+        self.assertTrue(org.conflict_branch.startswith("conflict/cloud/"))
+        self.assertEqual(run("git", "show", "main:CLAUDE.md", cwd=self.org), "mac edit\n")
+        self.assertEqual(run("git", "show", org.conflict_branch + ":CLAUDE.md", cwd=self.org), "cloud edit\n")
+        self.assertEqual((other / "memory/CLAUDE.md").read_text(), "mac edit\n")
+
+    def test_failure_is_logged_not_silent(self):
+        self.boot()
+        run("git", "remote", "set-url", "origin", str(self.tmp / "gone.git"), cwd=self.root / ".private")
+        (self.root / "memory/me/x.md").write_text("x\n")
+        report = rs.sync(self.root, "h1")
+        self.assertFalse(report.ok)
+        status = json.loads((self.root / rs.STATUS_FILE).read_text())
+        self.assertFalse(status["ok"])
+
+    def test_real_content_blocks_link_creation(self):
+        rs.clone_or_open(str(self.org), self.root / "memory")
+        (self.root / "memory/me").mkdir()
+        (self.root / "memory/me/identity.md").write_text("real\n")
+        with self.assertRaises(rs.SyncError):
+            rs.ensure_links(self.root)
+
+
+if __name__ == "__main__":
+    unittest.main()
+
+
+class AdoptAndResolveTest(RepoSyncTest):
+    def test_adopt_existing_checkouts(self):
+        org_co = self.tmp / "nucleus-memory"
+        priv_co = self.tmp / "cortex-private"
+        run("git", "clone", "-q", str(self.org), str(org_co))
+        run("git", "clone", "-q", str(self.priv), str(priv_co))
+        info = rs.bootstrap(self.root, str(self.org), str(self.priv), org_co, priv_co)
+        self.assertTrue(info["ok"])
+        self.assertTrue((self.root / "memory").is_symlink())
+        (self.root / "memory/me/identity.md").write_text("me\n")
+        self.assertTrue(rs.sync(self.root, "cloud").ok)
+        self.assertNotIn("me/identity.md", run("git", "ls-tree", "-r", "--name-only", "main", cwd=self.org))
+
+    def test_config_root_resolves_bootstrapped_cloud_root(self):
+        from scripts.lib.config_root import resolve_config_root
+
+        home = self.tmp / "home"
+        (home / "cortex-root").mkdir(parents=True)
+        self.assertEqual(resolve_config_root(home=home).source, "default (~/Documents/Claude)")
+        self.boot(home / "cortex-root")
+        res = resolve_config_root(home=home)
+        self.assertEqual(res.path, home / "cortex-root")

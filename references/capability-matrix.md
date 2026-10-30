@@ -167,6 +167,20 @@ with the concrete tool name pushed into the per-host column here.
 | Reads/writes external state | No (local to the host session). |
 | Confirmation policy | None beyond the host's own artifact-access model. |
 
+### `workspace.bootstrap` / `sync.git`
+
+| | |
+|---|---|
+| Required or optional | Required on any host that does not already hold a config-root (cloud sessions, scheduled tasks). Optional elsewhere. |
+| Claude Code | `python3 scripts/cortex_cli.py bootstrap` then `... sync`; no native equivalent. |
+| Claude cloud / scheduled routine | Same CLI from the installed plugin. The routine's repo sources are reused via `--adopt-org` / `--adopt-private`; push uses the session's `GH_TOKEN`. No device attachment needed. |
+| Cowork / Mac | The Mac copy is kept in sync by a launchd job running `cortex_cli.py sync` with the host's git credentials. |
+| Codex | Same CLI; Codex must not edit shared nodes directly (see §11A) and must run `sync` after approved writes. |
+| ChatGPT Work | Same CLI through the bridge; cloud Work has no device filesystem and relies on bootstrap. |
+| Behavior when unavailable | Fall back to the existing local config-root; cloud workflows with no resolvable root stop with a structured error. |
+| Reads/writes external state | Yes (git remotes). |
+| Confirmation policy | None for pull/push of the user's own repos; conflicts are reported, never auto-resolved. |
+
 ### `scheduler.register`
 
 | | |

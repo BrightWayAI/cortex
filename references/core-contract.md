@@ -31,7 +31,11 @@ workflow that touches memory. Precedence, highest first:
 4. **`~/Documents/.claude-plugin-config-root`** — the legacy pointer file.
    Read only if #2 and #3 are both absent. Kept indefinitely for backward
    compatibility; never removed, never required to be migrated.
-5. **`~/Documents/Claude`** — the backward-compatible default, used only if
+5. **`~/cortex-root`** — the cloud-first default, used only if it was
+   materialized by `cortex_cli.py bootstrap` (it contains `.cortex-repos.json`).
+   Lets a cloud session or scheduled task resolve without a host-specific
+   pointer.
+6. **`~/Documents/Claude`** — the backward-compatible default, used only if
    none of the above resolve.
 
 Resolution rules:
@@ -254,6 +258,39 @@ the shared proposal tree.
 Conflict and supersession behavior, proposal schema, privacy rules, and the
 single-writer-to-multi-writer transition are defined in
 `references/shared-memory-writes.md`.
+
+## 11B. Distributed sync (cloud-first)
+
+GitHub is the source of truth; every host (cloud session, scheduled task, Mac)
+holds a synced copy. A config-root is two git checkouts:
+
+- `<root>/memory/` — the shared/org memory repo.
+- `<root>/.private/` — the per-user private repo holding `me/`, `staged/`,
+  `archive/` (index + closures only; raw payloads never leave the run that
+  pulled them), `briefs/`, `plugins/`.
+- Directory symlinks (`memory/me`, `memory/staged`, `archive`, `briefs`,
+  `plugins`) point into `.private/`, so every path in §2 resolves unchanged.
+  The org repo ignores `/me` and `/staged` and must never track a symlink.
+
+Binding rules, implemented in `scripts/lib/repo_sync.py` and exposed as
+`cortex_cli.py bootstrap` / `sync`:
+
+- **Materialize:** a workflow on a host with no resolved root runs
+  `bootstrap` (idempotent clone/adopt, fast-forward pull, link creation,
+  derived `index.md`/`hot.md` regeneration) before anything else.
+- **Pull before write, push after write.** `.lock` stays per-checkout; it does
+  not span machines. Cross-machine safety is the git protocol.
+- **Never force-push.** A rejected push is fetched, rebased, retried (3x).
+- **Conflicts never touch main.** On a rebase conflict the rebase is aborted,
+  local commits are pushed to `conflict/<host>/<timestamp>`, the checkout
+  realigns to origin, and the run reports the conflict in its health line.
+  Facts are superseded (§12), not overwritten.
+- **Privacy guard.** `sync` refuses to push the org repo if it tracks any path
+  under `me|staged|archive|briefs|plugins` or any symlink.
+- **Never silent.** Every sync writes `<root>/.sync-status.json` and appends to
+  `staged/sync-log.md`; non-zero exit on any failure.
+- Append-only files (`staged/listen-health.md`, `staged/sync-log.md`) use
+  `merge=union` via `.gitattributes`.
 
 ## 12. Conflict and concept-drift behavior
 

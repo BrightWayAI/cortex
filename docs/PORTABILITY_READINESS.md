@@ -213,3 +213,11 @@ testing has explicitly **not** been done as part of this refactor:
 Do not treat any of the above as validated. If real-memory testing is
 wanted, it requires explicit authorization to work against a sanitized copy
 of actual user data, which was out of scope for this session.
+
+## Cloud-first sync (v4.29)
+
+All hosts share a two-repo config-root materialized by `cortex_cli.py bootstrap` and kept
+current by `cortex_cli.py sync` (`scripts/lib/repo_sync.py`; contract in
+`references/core-contract.md` §11B). Codex needs no adapter change beyond calling those two
+commands; the open question is credentials on each Codex surface (git push auth), which is
+host-specific and untested here.

@@ -10,7 +10,11 @@ You are running the user's morning routine. Overnight, `/listen` ingested yester
 
 ## Step 0 — Resolve config root and find the draft
 
-Standard config-root pattern.
+Standard config-root pattern. On a host with no resolved root (a cloud chat), run
+`python3 scripts/cortex_cli.py bootstrap --print-env` first; it pulls both repos so the latest
+draft, `me/`, and `briefs/` are present without connecting a Mac folder. If the root is a
+synced checkout, run `cortex_cli.py sync` before reading (pull) and again after the final
+write step (push); report a failed sync as an error, never silently.
 
 Locate the most-recent draft: list `<config-root>/memory/staged/commit-drafts/*.md` sorted by date descending (use the date in the filename, not mtime).
 

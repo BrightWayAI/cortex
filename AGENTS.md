@@ -121,3 +121,24 @@ python3 scripts/check_repo.py
 Keep capability translation in `references/capability-matrix.md`, not in a
 fork of the workflow, and keep all development tests on fixtures or temporary
 directories.
+
+## Cloud-first sync (v4.29+) — read before writing memory
+
+Cortex is now GitHub-first. A config-root is two checkouts (`memory/` = org repo,
+`.private/` = per-user private repo) joined by directory symlinks, so every path in
+`references/core-contract.md` §2 is unchanged. Do not re-describe the rules here; the
+canonical definition is **core-contract.md §11B** and the capability is
+`workspace.bootstrap` / `sync.git` in `references/capability-matrix.md`.
+
+What changes for you as a Codex host:
+
+- If no config-root resolves, run `python3 scripts/cortex_cli.py bootstrap --print-env`
+  (needs `CORTEX_ORG_REPO` / `CORTEX_PRIVATE_REPO` or `--org-repo` / `--private-repo`),
+  then use the printed root. `~/cortex-root` is now a resolution tier (§1 #5).
+- After approved writes, run `python3 scripts/cortex_cli.py sync --root <config-root>`.
+  Never force-push; a conflict is pushed to `conflict/<host>/<ts>` and reported.
+- `me/`, `staged/`, `archive/`, `briefs/`, and `plugins/` are private and live in the
+  private repo. The org repo must never track them or any symlink; `sync` enforces this.
+- `.lock` is per-checkout and does not coordinate across machines — git does.
+- A Mac `launchd` job runs `sync` on the user's machine; if you run there, you will see its
+  commits (`autosync <host> <ts>`) and `.sync-status.json` / `staged/sync-log.md`.

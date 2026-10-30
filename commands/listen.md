@@ -14,6 +14,12 @@ The output is a single review-ready draft the user merges via `/morning` the nex
 
 Standard config-root pattern.
 
+**Cloud-first materialize (v4.29+).** If no config-root resolves, or the resolved root is
+the cloud default, run `python3 scripts/cortex_cli.py bootstrap --print-env` (adopting the
+routine's repo checkouts with `--adopt-org`/`--adopt-private` when present) and use the
+printed root. When the root is a synced checkout, `bootstrap` has already pulled both repos;
+re-run `cortex_cli.py sync` at the end (Step 8.5). No Mac attachment is required.
+
 **Config-root reachability check (hard gate — v4.28+).** Once `<config-root>` is
 resolved, verify it is actually readable AND writable before doing anything else:
 stat the directory, then write and immediately delete a probe file at
@@ -404,6 +410,19 @@ Print a one-line summary to stdout (visible to scheduled-task logs):
 /listen <target_date> complete: <N> proposals staged in staged/commit-drafts/<target_date>.md. Run /morning to review.
 ```
 
+## Step 8.5 — Publish and health trace (v4.29+)
+
+In a `finally`-equivalent that runs on success AND failure:
+
+1. Append one line to `<config-root>/memory/staged/listen-health.md`:
+   `<iso8601> OK <date>: <N> proposals (...)` or `<iso8601> FAILED <date>: <reason>` or
+   `<iso8601> NOOP: ...`. Written on every run, scheduled or manual.
+2. Refresh `hot.md` (Step 5) before this if the run succeeded.
+3. Run `python3 scripts/cortex_cli.py sync --root <config-root>`. Exit non-zero if it fails.
+   A failed sync is a failed run: say so in the summary line and notify (below).
+4. If any step failed, send a Slack DM / push notification with the one-line reason, since a
+   failed sync means the health line never reached GitHub.
+
 ## Step 8 — Release locks (v4.12.2+)
 
 Always (success or failure path):
@@ -449,6 +468,13 @@ Alternative early-morning schedule (if user prefers proposals to be fresh at sta
   command: /listen
   args: ""
 ```
+
+**Cloud-only (v4.29+, preferred).** Register as a cloud routine with no device attached
+(no `requires-computer`). Prompt contract: bootstrap, catch-up date walk over missing
+`archive/<date>/_index.md` (cap 3), `/listen` per date including the brief-state read from
+the hosted artifact (Step 1.5a), `hot.md` refresh, Step 8.5 publish + health line on every
+run, then a one-line summary message. Pair with a Mac `launchd` job running
+`cortex_cli.py sync` so the local copy follows.
 
 Both work. The 11pm version means the proposals exist by the time the user wakes up; the 5am version means they're as fresh as possible.
 

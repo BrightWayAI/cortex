@@ -6,7 +6,9 @@ Implements the precedence chain defined in references/core-contract.md §1:
     2. CORTEX_CONFIG_ROOT environment variable
     3. ~/.cortex/config-root pointer file (new, vendor-neutral)
     4. ~/Documents/.claude-plugin-config-root pointer file (legacy)
-    5. ~/Documents/Claude (backward-compatible default)
+    5. ~/cortex-root, only if it was materialized by `cortex_cli.py bootstrap`
+       (contains .cortex-repos.json) — the cloud-first default
+    6. ~/Documents/Claude (backward-compatible default)
 
 `home` is always passed in explicitly rather than read from the real
 environment, so this module never touches a real user's filesystem unless
@@ -192,6 +194,12 @@ def resolve_config_root(
             source="~/Documents/.claude-plugin-config-root pointer (legacy)",
         )
     attempts.append("~/Documents/.claude-plugin-config-root pointer (legacy): file not found")
+
+    cloud_root = home / "cortex-root"
+    if (cloud_root / ".cortex-repos.json").is_file():
+        attempts.append(f"~/cortex-root (bootstrapped): {str(cloud_root)!r}")
+        return ConfigRootResult(path=cloud_root, source="~/cortex-root (bootstrapped)")
+    attempts.append("~/cortex-root (bootstrapped): not found")
 
     default = home / "Documents" / "Claude"
     attempts.append(f"default: {default!r}")

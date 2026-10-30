@@ -45,6 +45,7 @@ from scripts.lib.node_paths import (  # noqa: E402
     resolve_node_path,
     resolve_two_node_paths,
 )
+from scripts.lib import repo_sync  # noqa: E402
 from scripts.lib.sections import append_to_section, prepend_to_section, replace_section  # noqa: E402
 
 
@@ -215,6 +216,46 @@ def cmd_refresh_hot(args: argparse.Namespace) -> int:
     return 0
 
 
+def _resolve_sync_root(raw: str | None) -> Path:
+    import os
+
+    return Path(raw or os.environ.get("CORTEX_CONFIG_ROOT") or Path.home() / "cortex-root").expanduser()
+
+
+def cmd_bootstrap(args: argparse.Namespace) -> int:
+    import json
+
+    root = _resolve_sync_root(args.root)
+    try:
+        info = repo_sync.bootstrap(
+            root,
+            args.org_repo,
+            args.private_repo,
+            Path(args.adopt_org).expanduser() if args.adopt_org else None,
+            Path(args.adopt_private).expanduser() if args.adopt_private else None,
+        )
+    except repo_sync.SyncError as exc:
+        print(f"FAIL: {exc}", file=sys.stderr)
+        return 1
+    if not args.skip_derived:
+        memory_root = Path(info["memory_root"])
+        generate_and_write_index(memory_root)
+        generate_and_write_hot_cache(memory_root, trigger="bootstrap")
+    if args.print_env:
+        print(f"export CORTEX_CONFIG_ROOT={root}")
+    else:
+        print(json.dumps(info, indent=2))
+    return 0 if info["ok"] else 1
+
+
+def cmd_sync(args: argparse.Namespace) -> int:
+    root = _resolve_sync_root(args.root)
+    report = repo_sync.sync(root, host=args.host)
+    for r in report.results:
+        print(f"{'OK' if r.ok else 'FAIL'}: {r.name} {r.action} {r.detail}".rstrip())
+    return 0 if report.ok else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="cortex_cli")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -276,6 +317,21 @@ def build_parser() -> argparse.ArgumentParser:
     hot_p.add_argument("--memory-root", required=True)
     hot_p.add_argument("--trigger", default="manual")
     hot_p.set_defaults(func=cmd_refresh_hot)
+
+    boot_p = sub.add_parser("bootstrap", help="Clone/pull the org + private repos into a config-root")
+    boot_p.add_argument("--root", help="Config-root to materialize (default $CORTEX_CONFIG_ROOT or ~/cortex-root)")
+    boot_p.add_argument("--org-repo")
+    boot_p.add_argument("--private-repo")
+    boot_p.add_argument("--adopt-org", help="Existing checkout of the org repo to reuse (cloud sources)")
+    boot_p.add_argument("--adopt-private", help="Existing checkout of the private repo to reuse")
+    boot_p.add_argument("--print-env", action="store_true", help="Print an export line instead of JSON")
+    boot_p.add_argument("--skip-derived", action="store_true", help="Skip index/hot.md regeneration")
+    boot_p.set_defaults(func=cmd_bootstrap)
+
+    sync_p = sub.add_parser("sync", help="Commit stragglers, pull, and push both repos; log every run")
+    sync_p.add_argument("--root")
+    sync_p.add_argument("--host")
+    sync_p.set_defaults(func=cmd_sync)
 
     return parser
 

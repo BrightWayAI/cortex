@@ -17,6 +17,8 @@ Run once per work day, ideally 4-6pm. If a downstream plugin isn't installed (e.
 
 ## Pre-chain — Resolve config root and identity
 
+**Cloud-first (v4.29+):** if no config-root resolves, run `python3 scripts/cortex_cli.py bootstrap --print-env` and use the printed root; on a synced checkout, run `cortex_cli.py sync` once here (pull) before reading anything.
+
 Resolve `<config-root>` through the canonical precedence chain in
 `references/core-contract.md` §1. Read `<config-root>/memory/me/identity.md` for
 time zone (defines "today" / "tomorrow").
@@ -785,6 +787,11 @@ Run this on every exit path from Step 5.8 — success or failure — same as the
 ---
 
 ## Step 6 — Close
+
+**Publish (v4.29+).** If the config-root is a synced checkout (`<root>/.private` exists), run
+`python3 scripts/cortex_cli.py sync --root <config-root>` as the final write and include its
+result in the closing summary. A conflict is reported with its `conflict/<host>/<ts>` branch.
+
 
 Confirm completion briefly:
 
