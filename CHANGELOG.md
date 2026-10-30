@@ -4,6 +4,14 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.29.0] — Cloud-first sync (2026-10-30)
+
+### Added
+- `cortex_cli.py bootstrap` / `sync` and `scripts/lib/repo_sync.py`: materialize a config-root from two git repos (org memory + per-user private) joined by directory symlinks, pull-before-write / push-after-write, no force-push, conflicts diverted to `conflict/<host>/<ts>`, org-repo privacy guard (no `me|staged|archive|briefs|plugins` paths or symlinks), every run logged to `.sync-status.json` and `staged/sync-log.md`.
+- `~/cortex-root` config-root resolution tier (after a successful bootstrap) so cloud sessions resolve without a host pointer.
+- `/listen` Step 8.5 (health line on every run + sync + failure notification), cloud-only scheduling contract; `/morning` and `/end-day` bootstrap and sync steps.
+- core-contract §11B, capability `workspace.bootstrap` / `sync.git`, Codex handoff section in `AGENTS.md`.
+
 ## [4.28.2] — Plugin-directory pre-submission fixes (2026-10-15)
 
 ### Fixed
