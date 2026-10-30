@@ -15,6 +15,10 @@ Run once per work day, ideally 4-6pm. If a downstream plugin isn't installed (e.
 
 ---
 
+## Step G — Config-root guard (run first)
+
+Run `python3 scripts/cortex_cli.py root-status`. If it exits non-zero, **stop** and show its sentence verbatim; write nothing anywhere else and do not ask for folder access more than once per session. Exception: in a remote session with the sync repos attached, run the documented `bootstrap` (`references/core-contract.md` §11B) once and re-check before stopping.
+
 ## Pre-chain — Resolve config root and identity
 
 **Cloud-first (v4.29+):** if no config-root resolves, run `python3 scripts/cortex_cli.py bootstrap --print-env` and use the printed root; on a synced checkout, run `cortex_cli.py sync` once here (pull) before reading anything.

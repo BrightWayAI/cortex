@@ -78,6 +78,10 @@ Release maintainers should build the ZIP with
 `python3 scripts/build_release_archive.py --output /tmp/cortex.zip`; never
 archive a raw working directory containing ignored local settings.
 
+### Using Nucleus in a cloud session
+
+Attach `~/cortex-root` with + → Add folder at the start of each chat. No plugin can attach a folder for you; if it is missing, the session hook and `/status` say so in one sentence instead of continuing with empty memory.
+
 ### Claude Code — Full Support (new in v4)
 
 **Minimal setup (no hooks):**

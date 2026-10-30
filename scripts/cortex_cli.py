@@ -260,6 +260,29 @@ def cmd_bootstrap(args: argparse.Namespace) -> int:
     return 0 if info["ok"] else 1
 
 
+def cmd_root_status(args: argparse.Namespace) -> int:
+    """Read-only reachability check. Exit 0 only when the root is OK."""
+    import json
+    import os
+
+    from scripts.lib.config_root import ConfigRootError, resolve_config_root
+    from scripts.lib.root_reachability import RootState, classify, describe, status_block
+
+    try:
+        result = resolve_config_root(home=Path.home(), environ=os.environ, explicit=args.root)
+    except ConfigRootError as exc:
+        print(f"BROKEN\n  Cortex config-root resolution failed: {exc.message}")
+        return 1
+    state = classify(result, os.environ)
+    if args.format == "json":
+        print(json.dumps(describe(result, os.environ), indent=2))
+    elif state is RootState.OK:
+        print(f"OK {result.path} ({result.source})")
+    else:
+        print(status_block(state, result))
+    return 0 if state is RootState.OK else 1
+
+
 def cmd_sync(args: argparse.Namespace) -> int:
     root = _resolve_sync_root(args.root)
     report = repo_sync.sync(root, host=args.host)
@@ -339,6 +362,11 @@ def build_parser() -> argparse.ArgumentParser:
     boot_p.add_argument("--print-env", action="store_true", help="Print an export line instead of JSON")
     boot_p.add_argument("--skip-derived", action="store_true", help="Skip index/hot.md regeneration")
     boot_p.set_defaults(func=cmd_bootstrap)
+
+    root_p = sub.add_parser("root-status", help="Read-only: is the resolved config root reachable? Exit 0 if OK")
+    root_p.add_argument("--root", help="Explicit config-root override")
+    root_p.add_argument("--format", choices=("block", "json"), default="block")
+    root_p.set_defaults(func=cmd_root_status)
 
     sync_p = sub.add_parser("sync", help="Commit stragglers, pull, and push both repos; log every run")
     sync_p.add_argument("--root")

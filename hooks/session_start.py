@@ -8,8 +8,10 @@ prints plain text for Codex to add as developer context.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Mapping
 
@@ -18,6 +20,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
 from scripts.lib.config_root import ConfigRootError, ConfigRootResult, resolve_config_root  # noqa: E402
+from scripts.lib.root_reachability import RootState, classify, user_message  # noqa: E402
 
 
 RECALL_FILES = (
@@ -33,6 +36,55 @@ def resolve_for_host(
 ) -> ConfigRootResult:
     """Resolve through the shared vendor-neutral precedence implementation."""
     return resolve_config_root(home=home, environ=environ, explicit=explicit)
+
+
+NO_RECALL_LINE = "No recall files were readable."
+
+
+def unreachable_guidance(state: RootState, result: ConfigRootResult) -> str:
+    """Guidance appended when no recall file loaded. First line stays stable."""
+    sentence = user_message(state, result)
+    if state is RootState.REMOTE_NOT_ATTACHED:
+        return (
+            f"{NO_RECALL_LINE} {sentence}\n"
+            "Instruction to the assistant: in your first reply, before any Nucleus work, tell "
+            f"the user exactly: \"{sentence}\" You may request ~/cortex-root through the device "
+            "folder tool once. If it is declined or blocked, say the sentence and do not retry."
+        )
+    if state is RootState.OK:
+        return (
+            f"{NO_RECALL_LINE} The config root exists but memory/hot.md, memory/user.md and "
+            "memory/DASHBOARD.md are all missing or unreadable. Confirm the host's sandbox "
+            "includes the resolved config root."
+        )
+    return f"{NO_RECALL_LINE} {sentence}"
+
+
+def write_unreachable_receipt(
+    *, home: Path, schedule: str, result: ConfigRootResult, now: datetime | None = None
+) -> Path:
+    """Metadata-only receipt for an unattended run that could not see its root.
+
+    The config root is unreachable by definition, so the receipt cannot live
+    under it (that would create the root). It goes to ``~/.cortex/pending-receipts``;
+    /status reads that directory in addition to the root's ``schedule-runs``.
+    """
+    now = now or datetime.now(timezone.utc)
+    run_id = f"{now.strftime('%Y-%m-%dT%H%M%SZ')}-unreachable"
+    receipt = {
+        "run_id": run_id,
+        "skill": schedule,
+        "status": "failed",
+        "error_code": "config_root_unreachable",
+        "message": user_message(RootState.REMOTE_NOT_ATTACHED, result),
+        "config_root": str(result.path),
+        "config_root_source": result.source,
+        "created_at": now.isoformat(),
+    }
+    path = home / ".cortex" / "pending-receipts" / schedule / f"{run_id}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
+    return path
 
 
 def _bounded_read(path: Path, limit: int) -> str | None:
@@ -84,10 +136,7 @@ def build_context(
         loaded += 1
 
     if not loaded:
-        sections.append(
-            "No recall files were readable. Confirm that the resolved config root exists and "
-            "is included in the Codex sandbox's readable roots."
-        )
+        sections.append(unreachable_guidance(classify(result, environ), result))
     return "\n\n".join(sections)
 
 
@@ -97,6 +146,12 @@ def main() -> int:
     parser.add_argument("--config-root", help="explicit override (tests/diagnostics)")
     parser.add_argument("--max-chars", type=int, default=DEFAULT_MAX_CHARS)
     parser.add_argument("--print-root", action="store_true", help="print only resolved root and source")
+    parser.add_argument(
+        "--unattended",
+        metavar="SCHEDULE",
+        help="scheduled run: if the root is unreachable in a remote session, write a "
+        "config_root_unreachable receipt for SCHEDULE (e.g. nightly-listen)",
+    )
     args = parser.parse_args()
 
     home = args.home if args.home is not None else Path.home()
@@ -109,6 +164,10 @@ def main() -> int:
     if args.print_root:
         print(f"{result.path}\t{result.source}")
         return 0
+
+    if args.unattended and classify(result, os.environ) is RootState.REMOTE_NOT_ATTACHED:
+        receipt = write_unreachable_receipt(home=home, schedule=args.unattended, result=result)
+        print(f"Receipt written: {receipt}", file=sys.stderr)
 
     # Codex sends hook event JSON on stdin. No event field is needed for this
     # bounded read, so deliberately do not retain or echo that session data.

@@ -1,14 +1,14 @@
 {
-  "_README": "Cortex hooks for Claude Code. Copy the 'hooks' object below into your ~/.claude/settings.json or project-level .claude/settings.json. Alternatively, just use INSTRUCTIONS.md in your CLAUDE.md — hooks are optional and only make auto-recall more reliable.",
-
+  "_README": "Cortex hooks for Claude Code. Installed as a plugin, hooks/hooks.json is used automatically. To use these from ~/.claude/settings.json instead, copy the 'hooks' object and replace ${CLAUDE_PLUGIN_ROOT} with the absolute path of your cortex checkout. The session hook resolves the config root through the shared resolver and tells you plainly when it cannot see it (for example in a cloud session).",
   "hooks": {
-    "ProjectInit": [
+    "SessionStart": [
       {
-        "matcher": {},
+        "matcher": "startup|resume|clear|compact",
         "hooks": [
           {
             "type": "command",
-            "command": "cat ~/Documents/Claude/memory/user.md 2>/dev/null; echo '---DASHBOARD---'; cat ~/Documents/Claude/memory/DASHBOARD.md 2>/dev/null"
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/session_start.py\"",
+            "timeout": 10
           }
         ]
       }
@@ -19,18 +19,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '[cortex] Session ending — ensure observations were committed to ~/Documents/Claude/memory/'"
+            "command": "echo '[cortex] Session ending — make sure observations were committed to your Cortex memory (see /remember).'"
           }
         ]
       }
     ]
   },
-
   "_setup": {
     "step_1": "Open your settings file: ~/.claude/settings.json (global) or .claude/settings.json (project)",
     "step_2": "Copy the 'hooks' object above and merge it into your settings file",
     "step_3": "Add INSTRUCTIONS.md content to your CLAUDE.md (this is required — hooks alone are not enough)",
-    "step_4": "Run: mkdir -p ~/Documents/Claude/memory",
+    "step_4": "Run: python3 scripts/configure_cortex.py   (creates ~/cortex-root and the shared pointer)",
     "step_5": "Start a new Claude Code session",
     "minimal_setup": "If you don't want hooks, just add INSTRUCTIONS.md content to ~/.claude/CLAUDE.md. The always-on behaviors are instruction-driven and work without hooks."
   }

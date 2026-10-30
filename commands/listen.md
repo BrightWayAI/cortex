@@ -10,6 +10,10 @@ The output is a single review-ready draft the user merges via `/morning` the nex
 
 ---
 
+## Step G — Config-root guard (run first)
+
+Run `python3 scripts/cortex_cli.py root-status`. If it exits non-zero, **stop** and show its sentence verbatim; write nothing anywhere else and do not ask for folder access more than once per session. Exception: in a remote session with the sync repos attached, run the documented `bootstrap` (`references/core-contract.md` §11B) once and re-check before stopping.
+
 ## Step 0 — Resolve config root and target date
 
 Standard config-root pattern.

@@ -4,6 +4,20 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.30.0] — Unreachable config root is detected and explained (2026-10-30)
+
+Unreachable config root is now detected and explained at every entry point (cloud sessions especially).
+
+### Added
+- `scripts/lib/root_reachability.py`: read-only `classify()` → `OK | REMOTE_NOT_ATTACHED | LOCAL_MISSING | EXISTS_BUT_EMPTY`, `user_message()` and `status_block()`. Remote sessions are detected via `CLAUDE_CODE_REMOTE` in one function. Resolver precedence in `config_root.py` is unchanged.
+- `cortex_cli.py root-status` (exit 0 only when the root is reachable) for skills and `ops` to call.
+- `hooks/session_start.py --unattended <schedule>`: on `REMOTE_NOT_ATTACHED` writes a metadata-only `config_root_unreachable` receipt to `~/.cortex/pending-receipts/<schedule>/` (the root itself cannot hold it).
+
+### Changed
+- `hooks/session_start.py` keeps the stable first line "No recall files were readable." and, in a remote session, tells the assistant to say the Add-folder sentence in its first reply and never retry a declined folder request.
+- `claude-code/hooks.json` now calls `session_start.py` through the resolver instead of hard-coding `~/Documents/Claude`.
+- `/listen`, `/remember`, `/morning` and `/end-day` start with a config-root guard that stops with the helper's sentence instead of writing a partial result elsewhere (a remote session with the sync repos attached bootstraps once first, per core-contract §11B).
+
 ## [4.29.5] — New-user root placement (2026-10-30)
 
 ### Changed
