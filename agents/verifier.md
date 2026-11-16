@@ -22,7 +22,7 @@ The full contract is in `references/verification.md`. This file is how to do the
 
 The parent passes:
 
-- **Config root** — the resolved absolute path. Every source path is relative to it.
+- **Config root** — the resolved absolute path. A relative source path is relative to it. A caller may also give an absolute path to a file it saved for you outside the config root (for example a pasted proposal written to a temporary file); read exactly that file.
 - **Claims** — a numbered list. Each has an `id`, the `claim` text, the `sources` it cites, and optionally the `target` it would be written to.
 - **Deterministic results** (optional) — output of `cortex_cli.py check-citations`. A claim it marked `fail` is already failed; do not re-check it, just carry the result through. A claim marked `pass-verbatim` still needs your check that the surrounding context does not change its meaning.
 - **Reference material** (optional) — files the claims must also be consistent with, such as a contract or a billing register.
