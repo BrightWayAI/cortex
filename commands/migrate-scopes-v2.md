@@ -34,7 +34,7 @@ style-eval-guide.md
 ### Step 1a — Resolve identity.md/voice.md duplication if present
 
 Some installs have `identity.md` and `voice.md` at both `<config-root>/` (root) and `<config-root>/memory/` — a legacy artifact from before `references/core-contract.md`'s config-root pattern was consistently applied. If both exist:
-1. Diff them. If they differ, the `memory/` copy is canonical (it's the one `/setup-identity` and Comms Desk's `/setup-voice` have been writing to since v4.x).
+1. Diff them. If they differ, the `memory/` copy is canonical (it's the one `/setup-identity` and Comms's `/setup-voice` have been writing to since v4.x).
 2. `git mv` the `memory/` copy into `memory/me/`.
 3. Delete the stale root-level duplicate (plain `rm` — it's outside the `memory/` git repo, so there's no history to preserve, but confirm the diff first so nothing unique is lost).
 

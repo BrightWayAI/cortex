@@ -242,9 +242,9 @@ benefit.
 |---------|-------------|
 | `/setup-identity` | Captures name, company, role, primary tools, and communication defaults in the resolved config root. |
 
-Voice capture lives in Comms Desk's `/setup-voice` — the interview writes to the
+Voice capture lives in Comms's `/setup-voice` — the interview writes to the
 same Cortex-owned canonical file (`<config-root>/memory/me/voice.md`), but the
-command itself is owned and shipped by the Comms Desk plugin.
+command itself is owned and shipped by the Comms plugin.
 
 ### Closing rituals (v4.2+)
 
@@ -273,7 +273,7 @@ Commands also fire from natural language:
 | "we're done with X", "archive X" | `forget` |
 | "clean up memory", "what's stale" | `cleanup` |
 | "set up my identity", "configure my profile across plugins" | `setup-identity` |
-| "set up my voice", "update my writing voice" | Comms Desk's `setup-voice` |
+| "set up my voice", "update my writing voice" | Comms's `setup-voice` |
 | "wrapping up", "calling it a day", "end of day" | `end-day` |
 | "Friday wrap-up", "close out the week", "end of week" | `end-week` |
 

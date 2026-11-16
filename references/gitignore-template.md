@@ -4,7 +4,7 @@ The user's `<config-root>/` (typically `~/Documents/Claude/`) contains progressi
 
 | Path | Sensitivity | When written |
 |---|---|---|
-| `identity.md`, `voice.md` | Personal but synthesized | `/setup-identity`, Comms Desk's `/setup-voice` |
+| `identity.md`, `voice.md` | Personal but synthesized | `/setup-identity`, Comms's `/setup-voice` |
 | `memory/*.md` | Personal context, written by you + Claude | `/remember`, `/end-day`, mining |
 | `briefs/YYYY-MM-DD.md` | Calendar / inbox / CRM metadata, your annotations | `/brief`, `/end-day` reflection |
 | `plugins/*.md` | Configuration + dismissal logs | various setup commands |
