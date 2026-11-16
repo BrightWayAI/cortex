@@ -316,22 +316,20 @@ CORRECTED BELIEFS:
 DECISIONS (v4.9+):
 - A choice made — forward-looking commitment, not a retrospective lesson
 - Cues: "we decided," "I'm going with," "settled on," "going forward we'll," "the call is," "made the call to"
-- Required fields when captured:
-  - **What was decided:** the choice
-  - **When:** YYYY-MM-DD
-  - **Why:** reasoning at the time
-  - **Affected:** wikilinked entities affected by the decision
-  - **Revisit when:** trigger condition for re-evaluation ("if vendor raises prices," "annually," "if we hire a 3rd person") — or "n/a" if no specific trigger
-  - **Status:** active (default), superseded, revisit-now
-- Format inline:
-  - `DECISION [confirmed:YYYY-MM-DD] <one-line decision>`
-  - `  - What was decided: ...`
-  - `  - When: YYYY-MM-DD`
-  - `  - Why: ...`
-  - `  - Affected: [[entity]], [[entity]]`
-  - `  - Revisit when: ...`
-  - `  - Status: active`
-- DECISIONs decay slowly (1.5× modifier) — they stay relevant longer than INSIGHTs. They supersede via concept-drift detection (a later DECISION on the same topic moves the earlier one to Demoted knowledge with `↳ superseded by: ...`).
+- **Write a decision as a record, not inline (v4.38+).** Gather: what was decided, the inputs it rested on (with sources), why, who decided, the date it was made, which nodes it affects, what would reopen it, and whether it replaces an earlier decision. Then:
+  ```
+  python3 scripts/cortex_cli.py record-decision --memory-root <config-root>/memory \
+    --title "<one-line decision>" --what "<what was decided>" --why "<reasoning at the time>" \
+    --decided-by <actor-id> --date <YYYY-MM-DD> \
+    --input "<fact, and where it came from>" --affects <node-id> \
+    [--supersedes decision/<id>] [--revisit-when "<trigger>"] --recorded-by /remember
+  ```
+  It returns the record's id and a `pointer_line`. Append that line, unchanged, to the `## Knowledge` section of each affected node. Do not copy the reasoning into the node; it lives in the record.
+- **Who decided is the user.** `--decided-by` is the Actor ID from the active identity. If the conversation shows someone else made the call (a client, a partner), say so in `--what` or `--input`; the record still names the user as the person who recorded and owns it. Never write a decision with no decider.
+- **A changed decision supersedes; it does not edit.** If this decision replaces an earlier one, find the earlier record under `memory/decision/` and pass `--supersedes`. The CLI marks the old record `superseded` and keeps its text. If the earlier decision is an older inline `DECISION` entry with no record, leave that entry in place and add `↳ superseded by: [[decision/<new id>]]` beneath it.
+- **Ask before recording when a required part is missing.** If you cannot tell what was decided or why from the conversation, ask one short question. Do not invent inputs or reasoning.
+- Full schema and rules: `references/decision-schema.md`.
+- DECISION pointers decay slowly (1.5× modifier) — they stay relevant longer than INSIGHTs.
 - Example: "DECISION [confirmed:2026-05-15] Going with Pipedrive over HubSpot for the firm's CRM. **Why:** Pipedrive's pricing scales better at our size; HubSpot's marketing automation is more than we need. **Affected:** [[client/acme]], [[bizdev]]. **Revisit when:** if we hit 5+ active sales pipelines, re-evaluate. **Status:** active."
 
 CONTEXT & BACKGROUND:

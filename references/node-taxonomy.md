@@ -4,7 +4,7 @@ The canonical rules for **what node type to use when**. Prescriptive, not descri
 
 The goal: every piece of content has one obvious node type. New users (and mining agents) don't drift into ad-hoc placements that fragment the second brain over time.
 
-## The 8 node types
+## The 9 node types
 
 | Node type | Path | When to use | Example |
 |---|---|---|---|
@@ -15,6 +15,7 @@ The goal: every piece of content has one obvious node type. New users (and minin
 | **topic** | `memory/topic/<slug>.md` | A subject area / body of knowledge — what you've learned about something | `topic/ai-governance`, `topic/cohort-pricing` |
 | **workstream** | `memory/workstream/<slug>.md` | Ongoing initiative pipeline spanning multiple clients/people/topics (v4.9+) | `workstream/q3-outbound`, `workstream/product-strategy-2026` |
 | **bizdev** | `memory/bizdev/<slug>.md` | A prospect / opportunity not yet a client — outreach in progress, deal in discovery | `bizdev/atlas-ventures`, `bizdev/jordan-cole` |
+| **decision** | `memory/decision/<date>-<slug>.md` | One decision: what, inputs, who, when, what it replaces (v4.38+; `references/decision-schema.md`). Written only by `cortex_cli.py record-decision`. | `decision/2026-11-16-use-pipedrive-as-the-crm` |
 | **domain** (root) | `memory/<name>.md` | A persistent area of work that isn't an engagement — operations, infrastructure, finance, profile | `company-ops.md`, `brightway-profile.md`, `studio.md` |
 
 Two reserved subdirectories that aren't node types per se:
@@ -36,6 +37,8 @@ Ask in this order; first match wins:
 6. **Is this knowledge about a subject area that doesn't fit cleanly into any of the above?** → `topic/<slug>`
 7. **Is this infrastructure / setup / plugin-config?** → `infra/<slug>`
 8. **Is this a persistent area of YOUR work (your ops, your finances, your profile)?** → root domain `<name>.md`
+
+A **decision** is not chosen by these rules. Whatever node the content is about, if the content is a choice that commits you going forward, it also gets a decision record (`references/decision-schema.md`), and the node it is about gets a one-line pointer to it.
 
 If none match cleanly, use `topic/<slug>` as the default. Don't create new top-level directories.
 

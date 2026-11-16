@@ -222,6 +222,7 @@ All commands from v3 still work. v4 added subagent invocation; v4.2 adds shared-
 | Command | What it does |
 |---------|-------------|
 | `/remember` | Full session commit with confirmation |
+| _decision records_ | A decision you make is saved as its own record (what, inputs, who, when, what it replaces) under `memory/decision/`; a later decision supersedes an earlier one without erasing it. `/remember` and `/morning` write them. |
 | `/recall [project?]` | Dashboard (no arg) or specific project context |
 | `/learn [node] [type?] [content]` | Alias for `/remember --knowledge <type>` |
 | `/note [node] [content]` | Alias for `/remember --quick` |

@@ -468,6 +468,44 @@ def cmd_open_nudges(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_record_decision(args: argparse.Namespace) -> int:
+    """Create a decision record under memory/decision/ and mark any decision it supersedes.
+
+    One locked operation. Prints the new id and the pointer line to add to each
+    affected node; never prints the decision text.
+    """
+    import json
+    from datetime import date
+
+    from scripts.lib import decision_records as dr
+
+    memory_root = Path(args.memory_root).expanduser()
+    try:
+        decided = date.fromisoformat(args.date) if args.date else date.today()
+        decision = dr.Decision(
+            title=args.title, what=_read_payload(args.what), why=args.why,
+            decided=decided, decided_by=args.decided_by, inputs=args.input or [], affects=args.affects or [],
+            supersedes=args.supersedes, revisit_when=args.revisit_when or "n/a", recorded_by=args.recorded_by,
+        )
+        if not memory_root.is_dir():
+            raise dr.DecisionError(f"memory root not found: {memory_root}")
+        with MemoryLock(memory_root / ".lock"):
+            p = dr.plan(memory_root, decision)
+            target = memory_root / p["path"]
+            target.parent.mkdir(parents=True, exist_ok=True)
+            atomic_write(target, p["content"])
+            if p["superseded_id"]:
+                atomic_write(memory_root / dr.DECISION_DIR / f"{p['superseded_id']}.md", p["superseded_content"])
+    except (dr.DecisionError, ValueError, LockTimeoutError) as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        return 1
+    print(json.dumps({
+        "id": p["id"], "path": p["path"], "superseded": p["superseded_id"],
+        "pointer_line": p["pointer_line"], "missing_affects": p["missing_affects"],
+    }, indent=2, ensure_ascii=False))
+    return 0
+
+
 def cmd_sync(args: argparse.Namespace) -> int:
     root = _resolve_sync_root(args.root)
     report = repo_sync.sync(root, host=args.host)
@@ -604,6 +642,20 @@ def build_parser() -> argparse.ArgumentParser:
     nud_p = sub.add_parser("open-nudges", help="Read-only: staged nudges still awaiting the user, for /morning")
     nud_p.add_argument("--config-root", required=True, help="Resolved config root")
     nud_p.set_defaults(func=cmd_open_nudges)
+
+    dec_p = sub.add_parser("record-decision", help="Create a decision record under memory/decision/ and mark the one it supersedes")
+    dec_p.add_argument("--memory-root", required=True)
+    dec_p.add_argument("--title", required=True, help="One-line statement of the decision")
+    dec_p.add_argument("--what", required=True, help="What was decided, or - to read from stdin")
+    dec_p.add_argument("--why", required=True, help="The reasoning at the time")
+    dec_p.add_argument("--decided-by", required=True, help="Actor ID of the person who decided")
+    dec_p.add_argument("--date", help="YYYY-MM-DD; default today")
+    dec_p.add_argument("--input", action="append", help="Repeatable: a fact or source the decision rested on")
+    dec_p.add_argument("--affects", action="append", help="Repeatable: node id affected, e.g. client/acme")
+    dec_p.add_argument("--supersedes", help="Id of the decision this replaces, e.g. decision/2026-05-15-crm-choice")
+    dec_p.add_argument("--revisit-when", help="What would reopen this decision; default n/a")
+    dec_p.add_argument("--recorded-by", default="/remember", help="Command that recorded it")
+    dec_p.set_defaults(func=cmd_record_decision)
 
     sync_p = sub.add_parser("sync", help="Commit stragglers, pull, and push both repos; log every run")
     sync_p.add_argument("--root")
