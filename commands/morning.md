@@ -253,6 +253,7 @@ Rules for the batch:
   - **Person-update** → append to `## Recent interactions` or `## Notes` on the person page; create page if needed (graduate the contact per v4.2 rules).
   - **Commitment** → append to `## Open threads` (for ones the user owes) or `## Waiting on` (for ones others owe the user).
   - **Thread-update** → modify the named open thread (status change, append note, or close).
+  - **Decision** (v4.38+) → write a decision record with `python3 scripts/cortex_cli.py record-decision ... --recorded-by /morning` (`references/decision-schema.md`), using the proposal's content for what and why, its cited source as an input, and the user's Actor ID as `--decided-by`. Then append the returned `pointer_line` to the affected node's `## Knowledge` section. A decision is always reviewed one at a time: before writing, show what will be recorded and confirm it is what was decided, because the overnight run found it in a transcript and the user is the one deciding. Never batch a decision.
 - Append a `## Changelog` entry to the node: `[YYYY-MM-DD] /morning merge: <one-line summary> — proposed by <agent>`.
 - Check for conflicts via the v4.4 concept-drift detector. If the proposal conflicts with an existing entry, prompt: "This contradicts the existing entry '<...>'. Supersede the old / Keep both / Skip the new?" Default: keep both.
 

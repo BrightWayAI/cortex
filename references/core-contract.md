@@ -130,8 +130,11 @@ table, kept in sync with this list):
 - `GOTCHA` and `RECIPE` decay 1.5× slower than default (see
   `references/decay-model.md`).
 - `CORRECTION` never decays.
-- `DECISION` requires: what, when, why, affected entities, revisit-when
-  trigger, status.
+- `DECISION` (v4.38+): the decision itself is a record under `memory/decision/`
+  (what, inputs, who decided, when, what it supersedes; see
+  `references/decision-schema.md`), written only by `cortex_cli.py record-decision`.
+  The `DECISION` entry on an affected node is a one-line pointer to that record.
+  Inline multi-line `DECISION` entries written before 4.38 remain valid.
 - **Legacy compatibility:** a short-lived v4.13 attempt consolidated these
   into four types (`INSIGHT`/`DECISION`/`GOTCHA`/`CORRECTION`, with
   `[mental-model]`/`[recipe]` tags on `INSIGHT`). That consolidation is

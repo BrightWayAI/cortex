@@ -35,8 +35,9 @@ SECTION_TITLES = {
     "topic": "Topics",
     "workstream": "Workstreams",
     "bizdev": "Bizdev (active prospects)",
+    "decision": "Decisions",
 }
-SECTION_ORDER = ["user", "client", "person", "company", "topic", "workstream", "bizdev"]
+SECTION_ORDER = ["user", "client", "person", "company", "topic", "workstream", "bizdev", "decision"]
 
 
 @dataclass
@@ -47,7 +48,19 @@ class NodeEntry:
     last_confirmed: date | None
 
 
+def _strip_frontmatter(text: str) -> str:
+    """Drop a leading YAML frontmatter block so it is never used as a descriptor."""
+    if not text.startswith("---"):
+        return text
+    lines = text.splitlines()
+    for i in range(1, len(lines)):
+        if lines[i].strip() == "---":
+            return "\n".join(lines[i + 1 :])
+    return text
+
+
 def _descriptor(text: str) -> str:
+    text = _strip_frontmatter(text)
     lines = [ln.strip() for ln in text.splitlines()]
     non_empty = [ln for ln in lines if ln]
     if not non_empty:

@@ -371,7 +371,7 @@ Total proposals: <N> across <M> nodes.
 ## Proposals
 
 ### Proposal 1 — <node>: <one-line summary>
-- **Type:** INSIGHT | MODEL | GOTCHA | LESSON | RECIPE | CORRECTION | person-update | thread-update | commitment
+- **Type:** INSIGHT | MODEL | GOTCHA | LESSON | RECIPE | CORRECTION | DECISION | person-update | thread-update | commitment
 - **From:** note-taker (mode: transcript) | note-taker (mode: conversation) | note-taker (mode: activity)
 - **Source:** archive/<target_date>/<file> (line <N> or section <X>)
 - **Proposed content:**
@@ -389,6 +389,8 @@ Total proposals: <N> across <M> nodes.
 ```
 
 Sort by priority (Critical / High / Medium / Low) within type. Group by source agent for transparency.
+
+A `DECISION` proposal is something the source shows was decided. `/listen` never writes a decision record; `/morning` does, after the user confirms it (`references/decision-schema.md`). Put what was decided and the stated reason in Proposed content, and add `- **Conflicts:** decision — review individually` so it is never batched.
 
 This file is what `/morning` walks the user through. It is **not** active memory — it's a draft for review.
 

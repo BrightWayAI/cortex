@@ -4,6 +4,20 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.38.0] — Decision records (2026-11-16)
+
+### Added
+- Decision records: one file per decision at `memory/decision/<date>-<slug>.md` holding what was decided, the inputs it rested on, who decided, when, why, what it affects, and what it supersedes. Schema in `references/decision-schema.md`.
+- `cortex_cli.py record-decision`: writes a record under the memory lock. It refuses a record with no decider, will not overwrite, and when given `--supersedes` marks the earlier record `superseded` and links the two, keeping the earlier text. It returns a one-line pointer for each affected node.
+- `/remember` records a decision this way instead of typing a multi-line entry into a node. `/morning` does the same when you accept a decision proposal, always one at a time. `/listen` can propose a decision it found but never writes a record.
+- The memory index has a Decisions section. Eval `remember-decision-record`; 16 unit tests.
+
+### Fixed
+- The memory index described any node that starts with YAML frontmatter as "." because it read the `---` line as the description. It now skips frontmatter, so those nodes show their title.
+
+### Not changed
+- Inline `DECISION` entries written before this release stay valid and are not migrated.
+
 ## [4.37.1] — Plain plugin names (2026-11-16)
 
 ### Changed
