@@ -4,6 +4,20 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.34.0] — Autonomy policy 2.0.0: three risk tiers (2026-11-16)
+
+### Changed
+- Autonomy policy 2.0.0 (`references/autonomy-policy.md`). The single `Ask first` bucket becomes three tiers: low risk runs without asking, medium risk gets one review for the batch, high risk gets approval for each item. Every 1.0.0 `Ask first` item is high risk; sending or issuing a SOW, proposal, invoice, or billing packet is named as high risk. Medium is new and covers undoable writes to the user's own memory and records, chiefly merging proposals that passed verification and conflict with nothing.
+- `/start-nucleus` Step 3 offers a one-time upgrade for a 1.0.0-shape policy: adopt 2.0.0 (written with `cortex_cli.py replace-section` after confirmation) or keep 1.0.0 (`policy_version: "1.0.0-kept"`, no medium tier, everything that would be medium handled as high).
+
+### Not changed
+- Unattended runs still do low-risk work only and never write durable memory.
+- No command's behavior changes in this release. `/morning` starts using the medium tier in a later release.
+- Confirmation modes are unchanged and never lower a tier.
+
+### Added
+- Eval `start-nucleus-policy-upgrade`.
+
 ## [4.33.1] — Verifier reads caller-supplied files (2026-11-16)
 
 ### Changed

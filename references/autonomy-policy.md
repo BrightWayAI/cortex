@@ -1,31 +1,82 @@
 # Nucleus autonomy policy
 
-`policy_version: 1.0.0`
+`policy_version: 2.0.0`
 
 This file has two parts.
 
-1. **The policy** (`## Always`, `## Ask first`, `## Never`) is the versioned default
-   copied into a new memory instruction file. Users may customize their copy; the
-   normalized hash of that copy, not the version label alone, controls
-   re-acknowledgment. `/start-nucleus` installs these three sections only.
+1. **The policy** (`## Always`, the three risk tiers, and `## Never`) is the versioned
+   default copied into a new memory instruction file. Users may customize their copy;
+   the normalized hash of that copy, not the version label alone, controls
+   re-acknowledgment. `/start-nucleus` installs these five sections only.
 2. **Per-command confirmation modes** is plugin reference. It is not copied into
    memory and is not part of the acknowledged hash.
 
 The policy always wins. A confirmation mode can remove a prompt; it cannot permit
 anything the policy forbids.
 
+### What changed in 2.0.0
+
+Version 1.0.0 had one middle bucket, `## Ask first`. Version 2.0.0 splits what a person
+must see into two tiers, so that routine, undoable, verified work can be reviewed once as
+a batch while anything that leaves the user's control still gets its own approval.
+
+- Every 1.0.0 `Ask first` item is high risk in 2.0.0. Nothing that needed approval
+  before needs less now.
+- Sending or issuing a statement of work, proposal, invoice, or billing packet is named
+  as high risk.
+- Medium risk is new. Its main member is merging memory proposals that passed
+  verification (`references/verification.md`) and conflict with nothing.
+- Unattended runs are unchanged: they do low-risk work and stage the rest. Durable
+  memory is still never written unattended.
+
+A user who keeps a 1.0.0 copy stays valid. That copy has no medium tier, so every
+`Ask first` item in it, and anything that would be medium under 2.0.0, is handled as
+high risk: approval for each item.
+
 <!-- policy:start -->
 ## Always
 
 - Read the minimum relevant Cortex context before Nucleus work.
-- In unattended runs, stage cited proposals instead of editing durable memory.
+- Classify every action before taking it. An action's tier is the highest tier of
+  anything it does. When unsure, treat it as high risk.
+- In unattended runs, do low-risk work only and stage everything else for review. Stage
+  cited proposals instead of editing durable memory.
 - Cite file paths, thread IDs, or record IDs for proposed facts.
 - Log metadata-only agent/scheduled-run outcomes.
 
-## Ask first
+## Low risk: runs without asking
+
+Reversible, stays inside the config root, and changes nothing a person relies on as
+fact.
+
+- Read memory, files, and connected sources.
+- Archive raw source material and stage cited proposals for review.
+- Regenerate derived files such as the hot cache, the index, and the dashboard.
+- Draft a message, document, or update and show it. A draft is never sent.
+- Check claims against their sources and record the result.
+- Write metadata-only run receipts and health lines.
+
+## Medium risk: one review for the batch
+
+Changes durable memory or the user's own working records, can be undone, and affects no
+one else. Show the whole batch once with its evidence. The user accepts it, removes
+items, or opens any item before anything is written.
+
+- Merge staged memory proposals that passed verification and conflict with nothing.
+- Apply marks the user already made (done, skipped, snoozed) to memory.
+- Log time, touchpoints, and interaction notes to the user's own records.
+- Save a draft into the user's own drafts folder for them to send.
+
+## High risk: approval for each item
+
+Leaves the user's control, commits money or the firm, or cannot be cleanly undone.
+Preview the exact action and get approval immediately before each one.
 
 - Send an email, DM, or Slack message.
+- Issue or send a statement of work, proposal, invoice, or billing packet.
 - Create or change CRM deals, stages, or other external records.
+- Merge a memory proposal that failed verification, could not be verified, or conflicts
+  with an existing fact.
 - Delete or archive a memory node.
 - Register, change, replace, or remove a scheduled task.
 - Spend metered enrichment/research credits.
@@ -36,6 +87,7 @@ anything the policy forbids.
 
 - Send on the user's behalf without explicit per-message approval.
 - Write durable shared memory from an unattended run; staged proposals only.
+- Treat approval of one item or one batch as approval of another.
 - Store secrets, payment-card data, government IDs, or raw connector payloads in
   memory or run receipts.
 - Silently overwrite a fact; supersede it with dated provenance.
@@ -145,6 +197,13 @@ There is no global "auto everything" setting. Commands are opted in one at a tim
    proposals one at a time and keep every per-item gate regardless of mode. Setting
    one of them to `auto` only removes the front-door prompt. The interview-style setup
    commands are not wired either.
+
+### Tiers and modes
+
+A tier belongs to an action. A mode belongs to a command. A command set to `auto` skips
+the "run it?" prompt, and its low-risk actions run; its medium-risk actions still get
+one batch review and its high-risk actions still get approval one at a time. No mode
+lowers a tier.
 
 ### What a mode does not change
 
