@@ -90,6 +90,16 @@ Each migration has:
 
 ---
 
+### `plugin-configs` (v4.31+)
+
+- **What:** Archives legacy files in `<config-root>/plugins/` to `plugins/archive/` (the old-location `ops.schedules.md`, retired config files whose replacement exists, `*.bak-<date>` backups) and creates `plugins/ops/schedules.md` from the old file or the ops starter template.
+- **Marker:** `<config-root>/memory/.migration-plugin-configs-done`
+- **Command:** `/migrate-plugin-configs`, backed by `cortex_cli.py migrate-plugin-configs` (dry-run unless `--apply`).
+- **First introduced:** cortex v4.31.0
+- **Status:** new. Never run inline by another command.
+- **Failure mode:** stops at the first error; nothing is deleted or overwritten; marker not written; safe to retry.
+- **Rerun:** `--rerun` ignores the marker.
+
 ## Template for new migrations
 
 Use this template when adding a new migration:
