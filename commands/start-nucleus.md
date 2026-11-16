@@ -74,17 +74,34 @@ drafting remains available but generic until Comms Desk is installed and
 
 Read the Autonomy policy section from `<config-root>/memory/CLAUDE.md` (or the
 forwarded memory instructions). If none exists, offer to install the versioned
-default from `references/autonomy-policy.md` (only the `## Always`, `## Ask first` and
-`## Never` sections between the `policy:start` and `policy:end` markers); do not write it
-without confirmation.
+default from `references/autonomy-policy.md` (only the five sections between the
+`policy:start` and `policy:end` markers: `## Always`, the three risk tiers, and
+`## Never`); do not write it without confirmation.
+
+**Upgrading a 1.0.0 policy.** If the user's copy has an `## Ask first` section and no
+risk-tier sections, it is the 1.0.0 shape. Explain the change in three sentences: the
+middle bucket is now two tiers; everything that needed approval before is high risk and
+still needs approval each time; the new medium tier lets verified, undoable memory
+updates be reviewed once as a batch. Then offer:
+
+- **Adopt 2.0.0.** List any line in their copy that is not in the 1.0.0 default and ask
+  which tier each belongs in; when they are unsure, put it in high risk. Show the full
+  replacement section, and after confirmation write it with
+  `python3 scripts/cortex_cli.py replace-section`. Never hand-edit the file.
+- **Keep 1.0.0.** Change nothing. That copy has no medium tier, so every `Ask first`
+  item, and anything that would be medium under 2.0.0 (such as merging verified memory
+  proposals), is handled as high risk: approval for each item. Record `policy_version: "1.0.0-kept"` so this is not asked
+  again until their copy changes.
+
 Normalize the section to LF line endings, strip
 trailing whitespace per line, preserve line order, and compute SHA-256.
 
 The acknowledgment is valid only when all of these match:
 
 - `schema_version` is supported;
-- `policy_version` equals the current declared policy version. A pre-versioning
-  custom policy is labeled `legacy-unversioned`; its hash still controls validity;
+- `policy_version` equals the current declared policy version, or is `1.0.0-kept` for a
+  user who chose to keep the 1.0.0 shape. A pre-versioning custom policy is labeled
+  `legacy-unversioned`; its hash still controls validity;
 - `policy_sha256` equals the current normalized section hash;
 - `actor_id` matches the active identity.
 
@@ -94,7 +111,7 @@ Record this personal, host-visible state at
 ```json
 {
   "schema_version": "1.0.0",
-  "policy_version": "1.0.0",
+  "policy_version": "2.0.0",
   "policy_sha256": "sha256:...",
   "acknowledged_at": "<ISO-8601>",
   "actor_id": "<identity Actor ID>",
