@@ -90,6 +90,35 @@ It also writes a `## Verification` section with the four counts above `## Propos
 | Caller | Claims checked | Reference material | Since |
 |---|---|---|---|
 | cortex `/listen` Step 4.5 | every mined memory proposal in the night's commit draft (explicit brief marks are skipped) | none | 4.33.0 |
+| clients `/sow` Step 5.5 | amounts, rates, caps, dates, deliverables, party names in the drafted SOW | the proposal; the prior agreement if one was used | clients 0.9.0 |
+| clients `/client-status` Step 3.5 | every factual statement in each status draft | the SOW terms on file, for budget lines | clients 0.9.0 |
+| admin `/invoices` Step 4.5 | every line item: customer, project, product/service, quantity, rate, amount, period, and the totals | the billing register and the time log | admin 0.6.0 |
+
+## Checking a drafted document
+
+`/listen` checks proposals. Other commands check a document they just drafted (a SOW, a
+status update, an invoice packet) before showing it as ready. The procedure is the same
+for all of them:
+
+1. **List the checkable claims.** One claim per fact a reader would act on: every
+   amount, rate, cap, quantity, date, deadline, name, deliverable, and commitment. Skip
+   greetings, opinions, and vetted boilerplate copied verbatim.
+2. **Give each claim its source.** The source is the file the fact came from. When the
+   material is not already a file (pasted text, a connector result, a calendar or CRM
+   pull), save it to a temporary file outside `<config-root>` and cite that absolute
+   path. Do not cite a source you did not actually read while drafting.
+3. **Invoke the `verifier` agent** with the claims, their sources, and any reference
+   material the document must agree with. Pass nothing about how the draft was written.
+4. **Show the result with the draft**, before asking for any approval: the counts, then
+   every `fail` and `unverifiable` claim with the verifier's evidence and reason.
+5. **Do not silently fix.** If the user asks for a correction, make it, then re-check
+   the changed claims. Never present a claim as checked after editing it unchecked.
+6. **If the verifier is unavailable** (cortex not installed, the agent errored), say
+   "Not independently checked" with the reason. Never say or imply the draft was
+   checked.
+
+A clean result does not replace the command's own approval step. A send, a SOW, and an
+invoice still need the user's explicit approval.
 
 ## Measuring it
 

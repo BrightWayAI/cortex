@@ -4,6 +4,12 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.33.1] — Verifier reads caller-supplied files (2026-11-16)
+
+### Changed
+- `verifier` accepts an absolute path to a file the caller saved outside the config root, so a command can have a pasted proposal or a connector pull checked.
+- `references/verification.md`: new "Checking a drafted document" procedure and the three new callers (clients `/sow`, clients `/client-status`, admin `/invoices`).
+
 ## [4.33.0] — /listen verifies proposals (2026-11-16)
 
 ### Added
