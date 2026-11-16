@@ -82,6 +82,8 @@ map, not the territory.
   memory-librarian, note-taker, and gap-researcher.
   `note-taker`'s `mode: conversation` mines Cowork's own session history; Codex has no
   equivalent and the role is intentionally unavailable.
+  `verifier` (4.32.0) has no Codex binding: portability work is frozen, so the
+  role is Claude/Cowork only for now.
 - **Model-tier language** (e.g. "a low-cost/fast-tier model, Claude
   adapter: Haiku") appears throughout `commands/*.md` for cost-tiering
   decisions. Substitute Codex's own equivalent cheap/fast model where the

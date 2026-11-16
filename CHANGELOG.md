@@ -4,6 +4,18 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.32.0] — Verifier agent and citation check (2026-11-16)
+
+### Added
+- `verifier` agent (`agents/verifier.md`): an independent check of claims against their cited sources. It returns pass, fail, or unverifiable per claim with quoted evidence. It runs with fresh context, on a different model from the producer (`opus`; the producers are `sonnet`), with tools limited to `Read, Grep, Glob`.
+- `cortex_cli.py check-citations --config-root <root> --draft <date|path>`: a read-only script pass over a `/listen` commit draft. It fails a proposal whose source is missing, outside the config root, or cites a line that does not exist; passes one whose text appears verbatim in its source; and marks the rest for the verifier. The report holds names and statuses only.
+- `references/verification.md`: the contract, including the independence rules and what a verdict does and does not allow.
+- Eval `verifier-catches-unsupported-claims`.
+
+### Not changed
+- Nothing calls the verifier yet. `/listen`, `/morning`, and the autonomy policy are unchanged, and a `pass` authorizes no write.
+- No Codex binding for the new agent; portability work is frozen.
+
 ## [4.31.1] — Eval fixture config root (2026-11-16)
 
 ### Changed
