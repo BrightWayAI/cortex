@@ -57,7 +57,7 @@ Mine the user's recent meeting notes from all configured note sources. Two outpu
 
 - **`connector.crm.read`** (HubSpot task search, contact search) — dedupe commitments.
 - **`filesystem.read`** — `<config-root>/memory/` (`DASHBOARD.md`, node files, Scope sections).
-- **`connector.transcripts.read`** across configured providers (Granola, Gemini, Fireflies, Otter, Notion, etc.) — see `agents/lib/note-source-adapters.md` for which implementation each provider needs. Load that reference before starting.
+- **`connector.transcripts.read`** across configured providers (Granola, Gemini, Fireflies, Otter, Notion, etc.) — see `references/note-source-adapters.md` for which implementation each provider needs. Load that reference before starting.
 
 Missing/failing connector → log a one-line warning ("Skipping <source-id> — connector not connected") and continue with remaining sources. Run still succeeds if at least one source returns notes.
 

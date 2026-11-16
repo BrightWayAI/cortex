@@ -3,7 +3,7 @@ description = "Mode-dispatched mining agent. Caller passes mode=transcript or mo
 sandbox_mode = "read-only"
 developer_instructions = """
 Read AGENTS.md, references/core-contract.md, references/capability-matrix.md,
-agents/note-taker.md, and (for mode=transcript) agents/lib/note-source-adapters.md
+agents/note-taker.md, and (for mode=transcript) references/note-source-adapters.md
 completely. The caller must pass an explicit mode; only "transcript" and "activity"
 are available on Codex — "conversation" requires connector.session_history.read,
 which has no Codex implementation. Use filesystem.read plus only the connector.*.read

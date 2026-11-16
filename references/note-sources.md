@@ -50,7 +50,7 @@ Example:
 | Field | Required | Description |
 |---|---|---|
 | `id` | yes | Unique within the file. Lowercase, hyphenated. |
-| `provider` | yes | One of: `granola`, `gemini`, `fireflies`, `otter`, `notion`, `drive-folder`, `gmail-label`, `custom`. Maps to an adapter section in `agents/lib/note-source-adapters.md`. |
+| `provider` | yes | One of: `granola`, `gemini`, `fireflies`, `otter`, `notion`, `drive-folder`, `gmail-label`, `custom`. Maps to an adapter section in `references/note-source-adapters.md`. |
 | `label` | yes | Human-readable. Shown in `/end-day` status output. |
 | `enabled` | yes | `true` to use; `false` to opt out without deleting. |
 | `scope` | yes | `global` (every run) or `project:<node-id>` (only when the run involves that project node). |
@@ -69,7 +69,7 @@ At the top of every run:
 1. Read `<config-root>/plugins/cortex.note-sources.md`
 2. Filter to `enabled: true` sources
 3. Filter to `scope: global` ∪ `scope: project:<node>` where `<node>` matches a project in the run's `node_inventory` with activity in the window
-4. For each filtered source, load its adapter from `agents/lib/note-source-adapters.md`
+4. For each filtered source, load its adapter from `references/note-source-adapters.md`
 5. Call the adapter's `fetch(time_window)` to get normalized notes
 6. Dedupe across sources (same meeting captured by Granola AND Gemini → keep richest, link the other as `cross_source_ref`)
 7. Proceed with commitments + learnings extraction
@@ -82,7 +82,7 @@ Two cases:
 
 ### Case 1 — Provider has a first-party MCP
 
-Add a new section to `agents/lib/note-source-adapters.md` following the existing pattern. Document:
+Add a new section to `references/note-source-adapters.md` following the existing pattern. Document:
 
 - Config schema (what `config:` fields the adapter needs)
 - Tools used (which MCP tool names)
