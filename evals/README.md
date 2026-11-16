@@ -7,7 +7,7 @@ claude plugin eval . --scaffold --ablation none --judge-model sonnet
 ```
 
 `--scaffold` is required. The three morning cases (`good-morning`, `morning`,
-`run-my-morning`) each run `seed.sh`, which calls `_fixtures/seed-config-root.sh`. That
+`run-my-morning`) and `verifier-catches-unsupported-claims` each run `seed.sh`, which calls `_fixtures/seed-config-root.sh`. That
 script builds a small, fictional config root in the run's workspace and writes the
 `~/.cortex/config-root` pointer in the run's temporary home. Without it the run has no
 config root, the session-start check reports that, and `/morning` correctly stops.

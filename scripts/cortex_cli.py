@@ -326,6 +326,31 @@ def cmd_migrate_plugin_configs(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_check_citations(args: argparse.Namespace) -> int:
+    """Deterministic first-pass check of the citations in a /listen commit draft.
+
+    Read-only. Prints proposal numbers, node names, file names and statuses;
+    never proposal or source text. See references/verification.md.
+    """
+    import json
+
+    from scripts.lib import citation_check as cc
+
+    root = Path(args.config_root).expanduser()
+    drafts = root / "memory" / "staged" / "commit-drafts"
+    draft = Path(args.draft).expanduser() if "/" in args.draft or args.draft.endswith(".md") else drafts / f"{args.draft}.md"
+    if not draft.is_file():
+        print(f"ERROR: no commit draft at {draft}", file=sys.stderr)
+        return 1
+    results = cc.check_draft(draft.read_text(encoding="utf-8", errors="replace"), root)
+    print(json.dumps({
+        "draft": draft.name,
+        "summary": cc.summarize(results),
+        "proposals": [r.as_dict() for r in results],
+    }, indent=2))
+    return 0
+
+
 def cmd_sync(args: argparse.Namespace) -> int:
     root = _resolve_sync_root(args.root)
     report = repo_sync.sync(root, host=args.host)
@@ -420,6 +445,14 @@ def build_parser() -> argparse.ArgumentParser:
     mig_p.add_argument("--apply", action="store_true", help="Perform the moves; default is a dry run")
     mig_p.add_argument("--rerun", action="store_true", help="Ignore an existing done-marker")
     mig_p.set_defaults(func=cmd_migrate_plugin_configs)
+
+    cite_p = sub.add_parser(
+        "check-citations",
+        help="Read-only: check that each proposal in a /listen commit draft cites a source that exists",
+    )
+    cite_p.add_argument("--config-root", required=True, help="Resolved config root")
+    cite_p.add_argument("--draft", required=True, help="Draft date (YYYY-MM-DD) or path to the draft file")
+    cite_p.set_defaults(func=cmd_check_citations)
 
     sync_p = sub.add_parser("sync", help="Commit stragglers, pull, and push both repos; log every run")
     sync_p.add_argument("--root")
