@@ -283,6 +283,49 @@ def cmd_root_status(args: argparse.Namespace) -> int:
     return 0 if state is RootState.OK else 1
 
 
+def cmd_migrate_plugin_configs(args: argparse.Namespace) -> int:
+    """Archive legacy files in <config-root>/plugins/ and create ops/schedules.md.
+
+    Dry-run unless --apply. Prints file names only, never contents.
+    """
+    import json
+    from datetime import date
+
+    from scripts.lib import plugin_config_migration as mig
+
+    root = Path(args.config_root).expanduser()
+    plugins_dir = root / "plugins"
+    memory_root = root / "memory"
+    marker = memory_root / mig.MARKER_NAME
+    template = Path(args.schedules_template).expanduser() if args.schedules_template else None
+
+    if not plugins_dir.is_dir():
+        print(f"ERROR: no plugins directory at {plugins_dir}", file=sys.stderr)
+        return 1
+    if marker.exists() and not args.rerun:
+        print(json.dumps({"status": "already-done", "marker": str(marker), "actions": []}, indent=2))
+        return 0
+
+    today = date.today()
+    actions = mig.plan(plugins_dir, today, template)
+    report = {
+        "status": "applied" if args.apply else "dry-run",
+        "plugins_dir": str(plugins_dir),
+        "actions": [a.as_dict() for a in actions],
+    }
+    if args.apply:
+        try:
+            with MemoryLock(memory_root / ".lock"):
+                mig.apply(plugins_dir, actions, template)
+                atomic_write(marker, mig.marker_text(today, actions))
+        except (OSError, ValueError) as e:
+            print(f"ERROR: {e}; marker not written, safe to retry", file=sys.stderr)
+            return 1
+        report["marker"] = str(marker)
+    print(json.dumps(report, indent=2))
+    return 0
+
+
 def cmd_sync(args: argparse.Namespace) -> int:
     root = _resolve_sync_root(args.root)
     report = repo_sync.sync(root, host=args.host)
@@ -367,6 +410,16 @@ def build_parser() -> argparse.ArgumentParser:
     root_p.add_argument("--root", help="Explicit config-root override")
     root_p.add_argument("--format", choices=("block", "json"), default="block")
     root_p.set_defaults(func=cmd_root_status)
+
+    mig_p = sub.add_parser(
+        "migrate-plugin-configs",
+        help="Archive legacy files in <config-root>/plugins/ and create ops/schedules.md (dry-run unless --apply)",
+    )
+    mig_p.add_argument("--config-root", required=True, help="Resolved config root")
+    mig_p.add_argument("--schedules-template", help="Path to ops references/schedules.template.md")
+    mig_p.add_argument("--apply", action="store_true", help="Perform the moves; default is a dry run")
+    mig_p.add_argument("--rerun", action="store_true", help="Ignore an existing done-marker")
+    mig_p.set_defaults(func=cmd_migrate_plugin_configs)
 
     sync_p = sub.add_parser("sync", help="Commit stragglers, pull, and push both repos; log every run")
     sync_p.add_argument("--root")
