@@ -290,7 +290,7 @@ Cortex ships specialist subagents that handle heavy memory work off the main con
 | **`note-taker`** | Mode-dispatched nightly mining agent — `mode: transcript` (configured note-source providers), `mode: conversation` (other Cowork sessions), `mode: activity` (CRM/email/calendar events). Returns a commitments delta and a learnings delta per mode. Merges the former `transcript-reviewer` + `conversation-miner` + `activity-miner` agents (2026-09-15). | `/listen` (nightly), `/end-day` full mode, `/end-week` |
 | **`verifier`** | Independent check of claims against their cited sources: pass, fail, or unverifiable per claim, with quoted evidence. Fresh context, a different model from the producer, tools limited to Read/Grep/Glob. Contract in `references/verification.md`. | `/listen` Step 4.5 (every mined memory proposal); results shown by `/morning` |
 
-Subagents inherit parent tools at runtime, so they work with whichever connectors (Granola, CRM, etc.) the user has connected. Tool allowlists are kept tight where possible (e.g., memory-librarian uses only Read/Grep/Glob).
+Every agent declares its tool limits in frontmatter. `memory-librarian` and `verifier` have an allowlist (`Read, Grep, Glob`); `gap-researcher` adds web tools and `Write` for its staged draft. `note-taker` needs whichever connectors the user has connected (Granola, CRM, mail), whose tool names vary, so it inherits the parent's tools minus a `disallowedTools` list: the file-editing tools, delegation to other agents, and the common connector send/write tools. Its shell stays available because file search depends on it, so not writing through the shell remains a rule, not an enforced limit.
 
 To invoke a subagent directly via the Task tool (Cowork or Claude Code):
 
