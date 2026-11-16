@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: good-morning-natural-language
+context:
+  scaffold_script: seed.sh

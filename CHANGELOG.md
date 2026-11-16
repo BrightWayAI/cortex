@@ -4,6 +4,11 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.31.1] — Eval fixture config root (2026-11-16)
+
+### Changed
+- The three morning evals now seed a small fictional config root (`evals/_fixtures/seed-config-root.sh`, run with `--scaffold`). Before, the eval run had no config root, so `/morning` correctly stopped and the cases could not pass. `evals/README.md` says how to run the suite. No command behavior changed.
+
 ## [4.31.0] — Plugin config migration (2026-11-16)
 
 ### Added
