@@ -15,8 +15,8 @@ does not exist, say so and stop.
 
 ## Step 1 — Find the schedule starter (optional)
 
-If the ops plugin is installed, locate its `references/schedules.template.md` and pass
-it as `--schedules-template`. If ops is not installed, omit the flag; the migration then
+If the ops plugin is installed, locate the schedule starter in its references folder
+(`schedules.template.md`) and pass it as `--schedules-template`. If ops is not installed, omit the flag; the migration then
 only creates `plugins/ops/schedules.md` when an old `ops.schedules.md` can be carried
 over.
 
