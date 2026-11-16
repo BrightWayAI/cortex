@@ -4,6 +4,19 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.33.0] — /listen verifies proposals (2026-11-16)
+
+### Added
+- `/listen` Step 4.5: every mined memory proposal is checked against the source it cites before the draft is staged. A script pass (`check-citations`) runs first, then the `verifier` agent, then `cortex_cli.py record-verification` writes the result under each proposal and a `## Verification` count section into the draft.
+- `cortex_cli.py record-verification --config-root <root> --draft <date> [--verifier-results <file|->]`. It enforces the merge rules: a script `fail` is final, a proposal with no valid verifier result is `not-run`, and a `pass` at low confidence or without evidence is recorded as `unverifiable`.
+- `/morning` shows the overnight check counts in its summary and a `Check` line on each proposal.
+- Eval `listen-verification-step`.
+
+### Not changed
+- `/listen` still stages proposals only. A `pass` merges nothing and a `fail` deletes nothing; `/morning` offers the same choices on every proposal.
+- If the verifier cannot run, proposals are recorded `not-run` and the `/listen` run still succeeds.
+- Explicit marks from yesterday's brief are not sent to the verifier.
+
 ## [4.32.0] — Verifier agent and citation check (2026-11-16)
 
 ### Added

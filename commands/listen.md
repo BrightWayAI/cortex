@@ -355,6 +355,11 @@ Total proposals: <N> across <M> nodes.
 - **Target placement:** `<node-path>` · section `<section-name>`
 - **Confidence:** high | medium | low
 - **Conflicts:** <list of existing entries on the same node this might supersede / contradict; or "none">
+- **Citation check:** <added by Step 4.5> pass-verbatim | needs-verifier | fail
+- **Verification:** <added by Step 4.5> pass | fail | unverifiable | not-run
+- **Verifier confidence:** <added by Step 4.5> high | medium | low | n/a
+- **Evidence:** <added by Step 4.5> source (locator) — "quote of 25 words or fewer", or "none"
+- **Verification reasons:** <added by Step 4.5> reason codes, or "none"
 
 ### Proposal 2 ...
 ```
@@ -362,6 +367,39 @@ Total proposals: <N> across <M> nodes.
 Sort by priority (Critical / High / Medium / Low) within type. Group by source agent for transparency.
 
 This file is what `/morning` walks the user through. It is **not** active memory — it's a draft for review.
+
+---
+
+## Step 4.5 — Verify the proposals (v4.33+)
+
+Every proposal is checked against the source it cites before the user sees it. The rules are in `references/verification.md`; this step applies them. It adds evidence to the draft. It does not remove, rewrite, reorder, or merge any proposal, and a `pass` writes nothing to active memory.
+
+1. **Script pass.** Run:
+   ```
+   python3 scripts/cortex_cli.py check-citations --config-root <config-root> --draft <target_date>
+   ```
+   It reports `fail`, `pass-verbatim`, or `needs-verifier` per proposal. A `fail` here is final.
+
+2. **Verifier pass.** Invoke the `verifier` agent once (in batches of 40 if there are more) with:
+   - the config root;
+   - one claim per proposal that did not `fail` in step 1: `id` = the proposal number, `claim` = its Proposed content, `sources` = its Source field, `target` = its Target placement;
+   - the JSON from step 1.
+
+   Pass nothing else. Do not include the note-taker's output, your own view of the proposal, or the Confidence field: the verifier must judge the claim and the source alone.
+
+   **Skip** proposals tagged `from: listen-step-1.5` that are explicit marks (Step 1.5c). Those are the user's own clicks, not mined claims. They are recorded as `not-run`.
+
+3. **Record.** Save the verifier's JSON to a temporary file outside `<config-root>` and run:
+   ```
+   python3 scripts/cortex_cli.py record-verification --config-root <config-root> --draft <target_date> --verifier-results <file>
+   ```
+   This writes five fields under each proposal (`Citation check`, `Verification`, `Verifier confidence`, `Evidence`, `Verification reasons`) and a `## Verification` count section above `## Proposals`. Do not write these fields by hand. The script applies the merge rules, so report its output, not the verifier's raw verdicts: a script `fail` stays `fail` whatever the verifier said; a proposal with no valid verifier result is `not-run`; and a `pass` at `low` confidence, or a `pass` with no evidence, is recorded as `unverifiable`.
+
+4. **If the verifier cannot run or returns something unusable,** run `record-verification` without `--verifier-results`. Every checkable proposal is then recorded as `not-run`. Never record `pass` for a claim that was not checked, and never fail the `/listen` run because verification failed: the draft is still staged and the user reviews it as before. Note `verification: not-run (<reason>)` in `_index.md` under Errors.
+
+5. **Do not repair.** If a proposal fails, leave it in the draft as failed. Do not ask note-taker to re-mine it, and do not edit its content so that it passes.
+
+Carry the four counts (pass / fail / unverifiable / not-run) into the Step 8 summary line and the Step 8.5 health line.
 
 ---
 
@@ -411,7 +449,7 @@ The log-writer creates `log.md` if missing, writes the timestamped entry, and re
 Print a one-line summary to stdout (visible to scheduled-task logs):
 
 ```
-/listen <target_date> complete: <N> proposals staged in staged/commit-drafts/<target_date>.md. Run /morning to review.
+/listen <target_date> complete: <N> proposals staged in staged/commit-drafts/<target_date>.md (verified: <p> pass, <f> fail, <u> unverifiable, <n> not run). Run /morning to review.
 ```
 
 ## Step 8.5 — Publish and health trace (v4.29+)
@@ -419,7 +457,7 @@ Print a one-line summary to stdout (visible to scheduled-task logs):
 In a `finally`-equivalent that runs on success AND failure:
 
 1. Append one line to `<config-root>/memory/staged/listen-health.md`:
-   `<iso8601> OK <date>: <N> proposals (...)` or `<iso8601> FAILED <date>: <reason>` or
+   `<iso8601> OK <date>: <N> proposals (...; verified <p> pass / <f> fail / <u> unverifiable / <n> not-run)` or `<iso8601> FAILED <date>: <reason>` or
    `<iso8601> NOOP: ...`. Written on every run, scheduled or manual.
 2. Refresh `hot.md` (Step 5) before this if the run succeeded.
 3. Run `python3 scripts/cortex_cli.py sync --root <config-root>`. Exit non-zero if it fails.
@@ -448,6 +486,7 @@ Exit with status 0 on success; non-zero only on hard failures (config-root missi
 - **Idempotent on the archive.** Re-running for the same date without `--rewrite` is a no-op.
 - **Privacy-conservative.** Default to metadata-only for inbox / Slack. Full bodies only with explicit opt-in via user-context.
 - **Never modify active memory.** Proposals stage to `staged/commit-drafts/`. The user gates the merge.
+- **Verification informs, it does not decide.** Step 4.5 marks each proposal; a `pass` merges nothing and a `fail` deletes nothing. The user still gates every merge.
 - **Skip silently when empty.** If a date had zero source data (weekend, vacation), still write a minimal `_index.md` noting zero activity. Don't stage an empty draft — skip the draft entirely and log "no activity to mine."
 - **Honor adapter health.** If `/setup-sources` flagged an adapter as unhealthy in its last health-check, skip that adapter's pull and note in `_index.md`.
 
