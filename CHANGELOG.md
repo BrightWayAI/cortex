@@ -4,6 +4,19 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.30.3] — One autonomy reference (2026-11-16)
+
+### Changed
+- `references/autonomy.md` is merged into `references/autonomy-policy.md` as a second part, "Per-command confirmation modes". There is now one autonomy reference. The policy text (`## Always`, `## Ask first`, `## Never`) is byte-identical and `policy_version` stays `1.0.0`, so no install is asked to re-acknowledge.
+- `/start-nucleus` Step 3 installs only the three policy sections (between the `policy:start` and `policy:end` markers), not the confirmation-mode reference.
+- `/forget`, `/cleanup`, `/setup-obsidian` and `/end-day` cite the merged file.
+
+### Removed
+- `references/autonomy.md`.
+- Default-mode rows for commands that no longer exist: `/lead-draft`, `/lead-connect`, `/lead-warm`, `/weekly-outreach`, `/referral-ask`, `/referrals`. Their successors in `growth` were never listed and keep using `default: suggest`, as before.
+- Rows for deprecated aliases. `/ai-roundup`, `/generate-invoices` and `/nucleus-status` now take the mode of `/roundup`, `/invoices` and `/status`, which carry the same values the aliases had.
+- Version-history prose ("v4.7.1+", migration notes for v4.7).
+
 ## [4.30.2] — Hot-cache format regression tests (2026-11-16)
 
 ### Added

@@ -359,7 +359,7 @@ This is the only section that **fails loudly** rather than proposing an action â
 
 ## Step 3 â€” Propose actions (autonomy-aware in v4.7.2+)
 
-**Consult autonomy mode** per `references/autonomy.md`. Default for `/cleanup`: `suggest`.
+**Consult autonomy mode** per `references/autonomy-policy.md` (Per-command confirmation modes). Default for `/cleanup`: `suggest`.
 
 - **Mode = `auto`**: execute all proposed actions without the gate. Print the actions inline as they happen ("Consolidating [node-id]... Escalating [thread]..."). This is for trusting users running scheduled cleanups.
 - **Mode = `suggest`** (default): standard menu prompt as below; user picks `all` / numbered / `none`.

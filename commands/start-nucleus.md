@@ -74,7 +74,9 @@ drafting remains available but generic until Comms Desk is installed and
 
 Read the Autonomy policy section from `<config-root>/memory/CLAUDE.md` (or the
 forwarded memory instructions). If none exists, offer to install the versioned
-default from `references/autonomy-policy.md`; do not write it without confirmation.
+default from `references/autonomy-policy.md` (only the `## Always`, `## Ask first` and
+`## Never` sections between the `policy:start` and `policy:end` markers); do not write it
+without confirmation.
 Normalize the section to LF line endings, strip
 trailing whitespace per line, preserve line order, and compute SHA-256.
 
