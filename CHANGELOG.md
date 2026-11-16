@@ -4,6 +4,14 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.30.2] — Hot-cache format regression tests (2026-11-16)
+
+### Added
+- Six regression tests in `tests/test_hot_cache_generator.py` for the node formats the 4.28.1 generator fix added: `[node] LOG <date> —` changelog lines, `DECISION` lines with tags or extra text before the colon, bold and dated priority tags (`**[P0 2026-11-04]**`), and the alternate open-thread headings. All six fail against the pre-4.28.1 generator.
+
+### Notes
+- With these in place a run-time generator swap from `<config-root>/plugins/cortex-patches/` is no longer needed on any install at 4.28.1 or later. No shipped behavior changes.
+
 ## [4.30.1] — Adapter reference no longer registers as an agent (2026-11-16)
 
 ### Fixed
