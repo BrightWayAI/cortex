@@ -25,6 +25,14 @@ Locate the most-recent draft: list `<config-root>/memory/staged/commit-drafts/*.
 - **No draft found** → "No `/listen` draft to merge. Did `/listen` run last night? Recent runs:" → list any `archive/<date>/_index.md` from the last 3 days. Offer to run `/listen` now for yesterday. Otherwise exit.
 - **Draft exists** → continue.
 
+Also check for open nudges (growth 0.7.0+):
+
+```
+python3 scripts/cortex_cli.py open-nudges --config-root <config-root>
+```
+
+It is read-only and returns the staged nudges the user has not yet acted on. If there is no draft but there are open nudges, do not exit: say "No overnight draft to review," skip Steps 0.5 through 2.9 and Step 3, and go to Step 2.95.
+
 If the user passed `--date YYYY-MM-DD`, merge that specific draft instead of the latest.
 
 If the user passed `--discard`, move the latest draft to `staged/commit-drafts/archive/<date>-discarded.md` and exit without merging.
@@ -139,10 +147,14 @@ Sources status: <K> ok, <U> skipped/missing, <E> errors
 
 To review: <R> need your decision one at a time, <B> verified and ready to accept together, <M> from yesterday's brief
 
+Needs a nudge: <N> (<a> quiet deals, <b> with no reply, <c> you owe)
+
 Ready to go through them? (y/n/skim)
 ```
 
 Take the `Checked overnight` counts from the draft's `## Verification` section (written by `/listen` Step 4.5, v4.33+). If the draft has no such section (an older draft, or verification did not run), print `Checked overnight: not run` instead of counts.
+
+Leave out the `Needs a nudge` line when `open-nudges` (Step 0) returned none.
 
 Take the `To review` counts from:
 
@@ -268,6 +280,46 @@ python3 scripts/cortex_cli.py append-line --memory-root <config-root>/memory sta
 ```
 
 `by` is the Actor ID from the active identity, the person who made these decisions. Count each proposal once, by its recorded verification and what the user did. `pass:edited` and `pass:rejected` are the cases where the check was too lenient; `fail:accepted` is where it was too strict. Skip this step if nothing was reviewed. A failure to write the line is reported in Step 5 and does not undo the merges.
+
+---
+
+## Step 2.95 — Needs a nudge (v4.37+)
+
+Things that went quiet, found by growth's daily `/nudges` check: an open deal with no activity, an email that got no reply, a follow-up the user said they would send. Each comes with a drafted message. Skip this step silently if `open-nudges` returned nothing.
+
+Use the list from `open-nudges`. Do not decide for yourself which items are open. Read each item's full block, including its draft, from the day file it names under `<config-root>/memory/staged/nudges/`.
+
+Show them one at a time, oldest quiet first within each trigger, at most 10. If there are more, say how many remain and that they will be here tomorrow.
+
+```
+[Nudge N of M] <subject> — <quiet deal | no reply | you owe this>
+  Quiet since <date> (<days quiet>)
+  Source: <source>
+
+  Draft:
+  > <the drafted message, or "none — <why>">
+
+  (u)se it / (e)dit / s(n)ooze / (d)ismiss / (l)ater
+```
+
+- **use** → show the draft ready to copy and send. This command does not send. If the user asks you to send it, that is a high-risk action: show the exact message and recipient and get approval for that one message immediately before sending, through whatever mail tool the session has. Then record `acted`.
+- **edit** → take the user's changes, show the result, then treat it as `use`.
+- **snooze** → ask until when; default is the trigger's threshold from today (15 days for a quiet deal). Record `snoozed` with `until`.
+- **dismiss** → never raise this item again. Say so before recording it: "I won't flag this one again." Record `dismissed`.
+- **later** → record nothing. It will be shown again tomorrow.
+
+Record each decision as one ledger line:
+
+```
+python3 scripts/cortex_cli.py append-line --memory-root <config-root>/memory staged/nudges/ledger.jsonl '{"ts": "<ISO-8601 now>", "key": "<the item's Key>", "event": "acted | snoozed | dismissed", "until": "<YYYY-MM-DD, snooze only>", "by": "<actor-id>"}'
+```
+
+Rules:
+
+- **Never change a deal.** Do not propose closing a deal or changing its stage because it is quiet. If the user says the deal is dead, that is their decision: `dismiss` the nudge, and treat any CRM change they then ask for as a separate high-risk action.
+- **A nudge is not a memory proposal.** Nothing here is merged into a node. If acting on a nudge produces something worth remembering, the user can capture it with `/remember`.
+- **Keys come from the file.** Copy the `Key` exactly; never construct one.
+- After the walk, run `open-nudges` again. For each file it lists as `archivable`, move it with `python3 scripts/cortex_cli.py move-node --memory-root <config-root>/memory staged/nudges/<date>.md staged/nudges/archive/<date>.md`.
 
 ---
 
@@ -409,6 +461,7 @@ Run /brief to start the day with today's working surface? (y/N)
 ## What this command does NOT do
 
 - Does not invoke `/listen` (the draft must already exist).
+- Does not run `/nudges`, send a nudge's draft without approval for that message, or change a deal.
 - Does not modify the archive — `archive/` is immutable.
 - Does not auto-accept high-confidence proposals (even in skim mode, the user types `accept-all-high` explicitly).
 - Does not accept the verified batch without showing it and getting a yes, and never batches a proposal that failed, could not be verified, was not checked, or conflicts with an existing fact.
