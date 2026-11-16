@@ -4,6 +4,21 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.35.0] — /morning reviews by risk (2026-11-16)
+
+### Changed
+- `/morning` Step 2 is sorted by risk. Proposals that failed verification, could not be verified, were not checked, or conflict with an existing entry are walked one at a time, failures first. Proposals that passed verification and list no conflict are shown once as a list with their evidence and accepted with a single answer (the medium tier of autonomy policy 2.0.0). The summary line says how many are in each group.
+- A conflict found at write time takes that proposal out of the batch. A user whose policy has no medium tier gets no batch and reviews everything one at a time, as before.
+- Brief marks: the memory part still applies as one batch; any CRM or other external change in a brief proposal is previewed and approved on its own.
+
+### Added
+- `cortex_cli.py triage-draft --config-root <root> --draft <date>`: read-only grouping into `brief`, `batch`, and `review`. Anything that is not a clean `pass` with `Conflicts: none` goes to `review`, including every proposal in an unchecked draft.
+- `/morning` Step 2.9 appends one line of counts per review to `memory/staged/verifier-outcomes.md`, so the verifier's overturn and catch rates can be measured.
+- Eval `morning-triage`.
+
+### Not changed
+- Nothing is merged without the user: the batch is always shown and needs a yes. Unattended runs still write no durable memory.
+
 ## [4.34.0] — Autonomy policy 2.0.0: three risk tiers (2026-11-16)
 
 ### Changed

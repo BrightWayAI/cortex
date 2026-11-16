@@ -137,7 +137,7 @@ autonomy:
   /merge-research-draft: confirm   # per-proposal gating
 
   # Daily and weekly flow
-  /morning: confirm                # per-proposal gating
+  /morning: confirm                # one review for the verified batch; per-proposal for the rest
   /end-day: suggest
   /end-week: suggest
   /brief: suggest
@@ -193,8 +193,10 @@ There is no global "auto everything" setting. Commands are opted in one at a tim
 2. **Inside commands.** These gates read the mode and skip their own prompt in `auto`:
    `/forget` Step 3, `/cleanup` Step 3, `/setup-obsidian` Step 2, and the `/end-day`
    review card and write confirmations.
-3. **Deliberately not wired.** `/morning`, `/merge-research-draft` and `/rehearse` walk
-   proposals one at a time and keep every per-item gate regardless of mode. Setting
+3. **Deliberately not wired.** `/morning`, `/merge-research-draft` and `/rehearse` keep
+   their review gates regardless of mode: `/morning` reviews verified proposals as one
+   batch and everything else one at a time (its Step 2); the other two walk proposals
+   one at a time. Setting
    one of them to `auto` only removes the front-door prompt. The interview-style setup
    commands are not wired either.
 

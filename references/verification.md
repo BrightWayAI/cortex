@@ -127,5 +127,5 @@ The verifier is only useful if it is right. Two numbers say whether it is:
 - **Overturn rate** — of the claims it passed, how many the user rejected or edited.
 - **Catch rate** — of the claims it failed, how many the user agreed were wrong.
 
-Recording these is part of wiring each caller. No unattended write is considered until
+`/morning` Step 2.9 appends one line of counts per review to `<config-root>/memory/staged/verifier-outcomes.md` (counts only, no proposal text). Recording these is part of wiring each caller. No unattended write is considered until
 they have been observed over real use.

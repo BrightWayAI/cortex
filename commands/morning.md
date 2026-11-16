@@ -137,27 +137,54 @@ Checked overnight: <p> pass, <f> fail, <u> unverifiable, <n> not run
 Sources status: <K> ok, <U> skipped/missing, <E> errors
 (see archive/<date>/_index.md for details if errors)
 
-Ready to walk through the proposals? (y/n/skim)
+To review: <R> need your decision one at a time, <B> verified and ready to accept together, <M> from yesterday's brief
+
+Ready to go through them? (y/n/skim)
 ```
 
 Take the `Checked overnight` counts from the draft's `## Verification` section (written by `/listen` Step 4.5, v4.33+). If the draft has no such section (an older draft, or verification did not run), print `Checked overnight: not run` instead of counts.
 
-- `y` (default) → Step 2 (walk one at a time)
+Take the `To review` counts from:
+
+```
+python3 scripts/cortex_cli.py triage-draft --config-root <config-root> --draft <date>
+```
+
+It sorts every open proposal into `review`, `batch`, or `brief` and is read-only. Keep its output: Step 2 uses the same grouping.
+
+- `y` (default) → Step 2
 - `n` → exit, leave draft in place for later
 - `skim` → render every proposal as a one-line summary, no per-proposal gates; user picks numbers to dig into
 
 ---
 
-## Step 2 — Walk proposals interactively
+## Step 2 — Review the proposals
+
+The review is sorted by risk, following the autonomy policy's tiers (`references/autonomy-policy.md`). The user's time goes to what needs a decision; what was verified overnight is accepted together. The order is:
+
+1. **From yesterday's brief** — the `brief` group (2a).
+2. **Needs your decision** — the `review` group, one at a time (2b).
+3. **Verified overnight** — the `batch` group, shown once as a list (2c).
+
+Use the grouping from `triage-draft` (Step 1). Do not re-sort by your own judgment: a proposal is in `batch` only if the draft records `Verification: pass` and `Conflicts: none`. Everything else that is not from the brief is in `review`, including every proposal in a draft that was never checked.
+
+**If the user's autonomy policy has no medium-risk tier** (a 1.0.0-shape policy with `Ask first`, or `policy_version: "1.0.0-kept"`), there is no batch: walk the `batch` group one at a time in 2b, after the `review` group. Say once: "Your policy has no batch tier, so I'll go through the verified ones individually. `/start-nucleus` can change that."
+
+### 2a — From yesterday's brief
 
 **Brief-derived proposals go first (v4.27+).** Before the priority/source-agent grouping below, separate out any proposal tagged `from: listen-step-1.5` (brief mining — closures, delegations, reprioritizations, annotation carries, touch-logs, "likely done" inferences) into its own group, headed **"From yesterday's brief."** Within that group, split further:
 
 - **Explicit marks** (done/delegate/skip/not_important/reprioritized/annotations — anything the user directly clicked in the artifact) — these are already the user's decision, not a proposal to second-guess. Offer a single **bulk-accept**: "N items from yesterday's brief — done/delegated/skipped/annotated as you marked them. Accept all? (y / walk individually)". Default `y` still shows the list first (one line each), it just doesn't gate per-item.
 - **Inferred closures** ("likely done" from Step 1.5d, no explicit mark) — walk these **one at a time** like any other proposal, since they're a guess, not a click. Same `(a)ccept / (r)eject / (e)dit / (d)efer / (s)kip-remaining` controls.
 
-After the brief-derived group is resolved, continue to the regular grouping below for everything else (transcript/conversation/activity mining).
+A mark the user made applies to memory as one batch (medium risk). Any part of a brief proposal that changes something outside memory, such as completing a HubSpot task or reassigning a CRM task, is high risk: preview that action and get approval for it on its own, immediately before doing it. Accepting the batch does not approve it.
 
-Group remaining proposals by priority (Critical / High / Medium / Low) and within priority by source agent.
+### 2b — Needs your decision (one at a time)
+
+Walk the `review` group. Order: verification `fail` first, then `unverifiable`, then conflicts, then `not-run` / not checked; within each, by priority (Critical / High / Medium / Low).
+
+Open with one line that says what is here and why, for example: "4 need your decision: 2 the overnight check could not support, 1 conflicts with an existing entry, 1 was not checked."
+
 
 For each proposal:
 
@@ -181,6 +208,33 @@ The `Check` line is the draft's `Verification` result (`references/verification.
 
 When a proposal is accepted, do not copy the five verification fields into the node. They stay in the draft.
 
+### 2c — Verified overnight (one review for the batch)
+
+Show the `batch` group once, as a numbered list, one line each:
+
+```
+Verified overnight — <B> updates, each checked against its source, none conflicting:
+
+  1. <node-path> — <type>: <one-line summary of the proposed content>
+       evidence: <source> (<locator>) — "<quote>"
+  2. ...
+
+Accept all <B>? (y / drop <numbers> / open <number> / one-by-one / later)
+```
+
+- `y` → apply every listed proposal exactly as `accept` below does, then report how many were written and to which nodes.
+- `drop 2 5` → remove those from the batch and ask what to do with each (reject or defer); apply the rest.
+- `open 3` → show proposal 3 in full with the normal one-at-a-time choices, then return to the list.
+- `one-by-one` → walk the whole group individually.
+- `later` → leave the whole group in the draft.
+
+Rules for the batch:
+
+- Always show the list. Never apply the batch without showing it, and never treat a previous morning's "y" as covering today's.
+- Show the evidence line for every item. If an item has no recorded evidence, it does not belong in the batch: move it to 2b.
+- If the conflict check at write time (see `accept`) finds a conflict the draft did not list, stop on that item, take it out of the batch, and handle it one at a time. Continue with the rest.
+- Nothing in the batch may touch anything outside memory. A proposal that would is not medium risk: move it to 2b.
+
 ### `accept`
 - Apply the proposal to the target node per its `Type`:
   - **Knowledge entry** → append to the appropriate `## Knowledge → ### Insights / Models / Gotchas / Lessons / Recipes / Corrections` section with `[confirmed:today] [recalled:today] [by:<actor-id>]`, where actor ID comes from the active private identity.
@@ -202,6 +256,18 @@ When a proposal is accepted, do not copy the five verification fields into the n
 
 ### `skip-remaining`
 - Stop walking. Remaining proposals stay in the draft for the next session.
+
+---
+
+## Step 2.9 — Record how the overnight check did
+
+After the review, append one line of counts (no proposal text, no names) so the verifier's accuracy can be judged over time (`references/verification.md`, "Measuring it"):
+
+```
+python3 scripts/cortex_cli.py append-line --memory-root <config-root>/memory staged/verifier-outcomes.md "<today> draft=<date> pass:accepted=<n> pass:edited=<n> pass:rejected=<n> fail:rejected=<n> fail:accepted=<n> unverifiable:accepted=<n> unverifiable:rejected=<n> notrun=<n> deferred=<n>"
+```
+
+Count each proposal once, by its recorded verification and what the user did. `pass:edited` and `pass:rejected` are the cases where the check was too lenient; `fail:accepted` is where it was too strict. Skip this step if nothing was reviewed. A failure to write the line is reported in Step 5 and does not undo the merges.
 
 ---
 
@@ -345,5 +411,6 @@ Run /brief to start the day with today's working surface? (y/N)
 - Does not invoke `/listen` (the draft must already exist).
 - Does not modify the archive — `archive/` is immutable.
 - Does not auto-accept high-confidence proposals (even in skim mode, the user types `accept-all-high` explicitly).
+- Does not accept the verified batch without showing it and getting a yes, and never batches a proposal that failed, could not be verified, was not checked, or conflicts with an existing fact.
 - Does not call WebSearch / WebFetch. The mining already happened overnight.
 - Does not run `/brief` without user confirmation.
