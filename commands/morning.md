@@ -264,10 +264,10 @@ Rules for the batch:
 After the review, append one line of counts (no proposal text, no names) so the verifier's accuracy can be judged over time (`references/verification.md`, "Measuring it"):
 
 ```
-python3 scripts/cortex_cli.py append-line --memory-root <config-root>/memory staged/verifier-outcomes.md "<today> draft=<date> pass:accepted=<n> pass:edited=<n> pass:rejected=<n> fail:rejected=<n> fail:accepted=<n> unverifiable:accepted=<n> unverifiable:rejected=<n> notrun=<n> deferred=<n>"
+python3 scripts/cortex_cli.py append-line --memory-root <config-root>/memory staged/verifier-outcomes.md "<today> by=<actor-id> draft=<date> pass:accepted=<n> pass:edited=<n> pass:rejected=<n> fail:rejected=<n> fail:accepted=<n> unverifiable:accepted=<n> unverifiable:rejected=<n> notrun=<n> deferred=<n>"
 ```
 
-Count each proposal once, by its recorded verification and what the user did. `pass:edited` and `pass:rejected` are the cases where the check was too lenient; `fail:accepted` is where it was too strict. Skip this step if nothing was reviewed. A failure to write the line is reported in Step 5 and does not undo the merges.
+`by` is the Actor ID from the active identity, the person who made these decisions. Count each proposal once, by its recorded verification and what the user did. `pass:edited` and `pass:rejected` are the cases where the check was too lenient; `fail:accepted` is where it was too strict. Skip this step if nothing was reviewed. A failure to write the line is reported in Step 5 and does not undo the merges.
 
 ---
 
