@@ -415,6 +415,48 @@ def cmd_triage_draft(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_write_receipt(args: argparse.Namespace) -> int:
+    """Write one scheduled-run receipt (schema 1.1.0) with the accountable actor.
+
+    Resolves the actor from <config-root>/memory/me/identity.md, falling back to
+    --actor-id (the actor the schedule was registered for). If the receipt file
+    cannot be written, the receipt is printed to stdout and the exit code is 2,
+    so the scheduler's own log still captures it.
+    """
+    import json
+
+    from scripts.lib import receipts as rc
+
+    root = Path(args.config_root).expanduser()
+    try:
+        extra = json.loads(args.extra) if args.extra else {}
+        if not isinstance(extra, dict):
+            raise ValueError("--extra must be a JSON object")
+        actor_id, actor_source = rc.resolve_actor(root, args.actor_id)
+        receipt = rc.build(
+            schedule=args.schedule, run_id=args.run_id, started_at=args.started_at,
+            ended_at=args.ended_at, outcome=args.outcome, actor_id=actor_id,
+            actor_source=actor_source, host_id=args.host_id, extra=extra,
+            error_codes=args.error_code or [],
+        )
+    except (ValueError, json.JSONDecodeError) as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        return 1
+    text = rc.render(receipt)
+    target = rc.receipt_path(root, args.schedule, args.run_id)
+    try:
+        if not root.is_dir():
+            raise OSError(f"config root not reachable: {root}")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        atomic_write(target, text)
+    except OSError as e:
+        print(text, end="")
+        print(f"ERROR: receipt not written to disk ({e}); emitted to stdout instead", file=sys.stderr)
+        return 2
+    print(text, end="")
+    return 0
+
+
 def cmd_sync(args: argparse.Namespace) -> int:
     root = _resolve_sync_root(args.root)
     report = repo_sync.sync(root, host=args.host)
@@ -534,6 +576,19 @@ def build_parser() -> argparse.ArgumentParser:
     tri_p.add_argument("--config-root", required=True, help="Resolved config root")
     tri_p.add_argument("--draft", required=True, help="Draft date (YYYY-MM-DD)")
     tri_p.set_defaults(func=cmd_triage_draft)
+
+    rcp_p = sub.add_parser("write-receipt", help="Write a scheduled-run receipt (schema 1.1.0) that records the accountable actor")
+    rcp_p.add_argument("--config-root", required=True, help="Resolved config root")
+    rcp_p.add_argument("--schedule", required=True, help="Schedule name, e.g. nightly-listen")
+    rcp_p.add_argument("--run-id", required=True, help="Host run id or a UUID")
+    rcp_p.add_argument("--started-at", required=True, help="ISO-8601")
+    rcp_p.add_argument("--ended-at", required=True, help="ISO-8601")
+    rcp_p.add_argument("--outcome", required=True, help="succeeded | partial | skipped | failed")
+    rcp_p.add_argument("--actor-id", help="Actor the schedule was registered for; used only if the identity file cannot be read")
+    rcp_p.add_argument("--host-id")
+    rcp_p.add_argument("--error-code", action="append", help="Repeatable sanitized error code")
+    rcp_p.add_argument("--extra", help="JSON object of extra metadata-only fields (counts, state_source, source_coverage)")
+    rcp_p.set_defaults(func=cmd_write_receipt)
 
     sync_p = sub.add_parser("sync", help="Commit stragglers, pull, and push both repos; log every run")
     sync_p.add_argument("--root")

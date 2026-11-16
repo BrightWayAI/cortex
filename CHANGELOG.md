@@ -4,6 +4,15 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.36.0] — Run receipts record the accountable actor (2026-11-16)
+
+### Added
+- `cortex_cli.py write-receipt`: writes a scheduled-run receipt in schema 1.1.0. It records `actor_id`, the person the run acts for, read from `memory/me/identity.md`, with the actor named in the registered prompt as the fallback and `unresolved` (plus the `actor_unresolved` error code) when neither exists. It validates the outcome, will not let extra fields override core ones, and prints the receipt to stdout with exit code 2 when the file cannot be written.
+
+### Changed
+- `/listen` Step 1.5j and the Step 0 unreachable-root path write their receipts through `write-receipt`, so both carry the actor. The failure receipt takes the actor from the registered prompt because the identity file cannot be read in that case.
+- `/morning` Step 2.9 records `by=<actor-id>` on the verifier-outcomes line.
+
 ## [4.35.0] — /morning reviews by risk (2026-11-16)
 
 ### Changed

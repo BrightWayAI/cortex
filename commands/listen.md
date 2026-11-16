@@ -39,7 +39,14 @@ fails:
    `<config-root or best-effort fallback path>/plugins/ops/schedule-runs/nightly-listen/<run_id>.json`
    if any writable location can be reached at all; otherwise emit the receipt to
    stdout so the scheduler's own run log captures it.
-2. Set `status: "failed"`, `error_code: "config_root_unreachable"` on the receipt.
+2. Set `outcome: "failed"` with `error_codes: ["config_root_unreachable"]` on the
+   receipt (schema 1.1.0). Older readers also look for `status: "failed"` and a singular
+   `error_code`; `/status` accepts either shape.
+   Write it with `python3 scripts/cortex_cli.py write-receipt --config-root <config-root> --schedule nightly-listen --run-id <run_id> --started-at <iso> --ended-at <iso> --outcome failed --error-code config_root_unreachable --actor-id <the actor named in the registered prompt>`.
+   When the root is unreachable the command prints the receipt to stdout and exits 2;
+   that output is the receipt. The identity file cannot be read in this case, so the
+   actor comes from the registered prompt. If the prompt names none, the receipt says
+   `actor_id: "unresolved"`. Never guess an actor.
 3. Exit non-zero. Do not report success, and do not proceed to Step 0.5 or beyond.
 
 This hard gate applies only to the whole config root being unreachable. Graceful
@@ -231,23 +238,40 @@ For every ledger entry with `kind: "outreach"` whose `node` resolves to a known 
 ### Step 1.5j — Write the scheduled-run receipt
 
 After closures.json (1.5e), the snooze ledger + growth sync (1.5h), and the
-`## Reflection` section (1.5g) are all written, emit one metadata-only receipt using
-the same field names as ops's Step 5 schema (`ops/commands/register-schedules.md`
-Step 5), to `<config-root>/plugins/ops/schedule-runs/nightly-listen/<run_id>.json`:
+`## Reflection` section (1.5g) are all written, write one metadata-only receipt
+(schema 1.1.0, defined in ops's `commands/register-schedules.md` Step 5). Do not
+hand-write the JSON:
+
+```
+python3 scripts/cortex_cli.py write-receipt --config-root <config-root> \
+  --schedule nightly-listen --run-id <host run id or UUID> \
+  --started-at <ISO-8601> --ended-at <ISO-8601> --outcome succeeded \
+  --actor-id <the actor named in the registered prompt, if any> \
+  --extra '{"state_source": "state.json | artifact-db | none", "counts": {"closed": 0, "carried": 0, "snoozed": 0, "suppressed": 0, "reflection_written": false}}'
+```
+
+It writes `<config-root>/plugins/ops/schedule-runs/nightly-listen/<run_id>.json`:
 
 ```json
 {
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "run_id": "<host run id or UUID>",
   "schedule": "nightly-listen",
+  "actor_id": "<Actor ID from memory/me/identity.md>",
+  "actor_source": "identity | registration | unresolved",
   "started_at": "<ISO-8601>",
   "ended_at": "<ISO-8601>",
   "outcome": "succeeded",
+  "error_codes": [],
   "state_source": "state.json | artifact-db | none",
-  "counts": {"closed": 0, "carried": 0, "snoozed": 0, "suppressed": 0, "reflection_written": false},
-  "error_codes": []
+  "counts": {"closed": 0, "carried": 0, "snoozed": 0, "suppressed": 0, "reflection_written": false}
 }
 ```
+
+`actor_id` is the person this run acts for and who is accountable for what it stages.
+The command reads it from the identity file; `--actor-id` is used only if that file
+cannot be read. If neither gives an actor the receipt says `unresolved` and carries
+the `actor_unresolved` error code. The run continues, and `/status` reports it.
 
 `counts` reflects what Step 1.5e/1.5g actually produced for `target_date`. If
 `<target_date>.state.json` was missing on disk AND the `.artifact-runtime.json`
