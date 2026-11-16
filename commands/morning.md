@@ -128,6 +128,7 @@ Good morning. Overnight /listen ingested yesterday:
   <T> transcripts (<adapter1>: <count>, <adapter2>: <count>, ...)
 
 Proposals staged: <P> total
+Checked overnight: <p> pass, <f> fail, <u> unverifiable, <n> not run
   - <a> knowledge entries (INSIGHT / MODEL / GOTCHA / LESSON / RECIPE / CORRECTION)
   - <b> person-page updates
   - <c> commitment captures (to/from others)
@@ -138,6 +139,8 @@ Sources status: <K> ok, <U> skipped/missing, <E> errors
 
 Ready to walk through the proposals? (y/n/skim)
 ```
+
+Take the `Checked overnight` counts from the draft's `## Verification` section (written by `/listen` Step 4.5, v4.33+). If the draft has no such section (an older draft, or verification did not run), print `Checked overnight: not run` instead of counts.
 
 - `y` (default) → Step 2 (walk one at a time)
 - `n` → exit, leave draft in place for later
@@ -162,6 +165,7 @@ For each proposal:
 [Proposal N of P] <node-path> — <type> from <agent>
   Confidence: <high | medium | low>
   Source: archive/<date>/<file> · <section/line>
+  Check: <Verification> (<Verifier confidence>) — <Evidence, or the Verification reasons if it failed>
   Conflicts: <list or "none">
 
   Current state in `<node-path>`:
@@ -172,6 +176,10 @@ For each proposal:
 
   (a)ccept / (r)eject / (e)dit / (d)efer / (s)kip-remaining
 ```
+
+The `Check` line is the draft's `Verification` result (`references/verification.md`). Show it exactly as recorded; if the proposal has no `Verification` field, show `Check: not run`. For a `fail` or `unverifiable` proposal, say so in one plain sentence before the choices (for example: "The overnight check could not find this in the cited source: the transcript says Friday, not Wednesday."). The check is evidence, not a decision: every proposal still gets the same choices, and nothing is accepted or rejected on the user's behalf because of it.
+
+When a proposal is accepted, do not copy the five verification fields into the node. They stay in the draft.
 
 ### `accept`
 - Apply the proposal to the target node per its `Type`:

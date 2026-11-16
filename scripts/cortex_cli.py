@@ -351,6 +351,49 @@ def cmd_check_citations(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_record_verification(args: argparse.Namespace) -> int:
+    """Write verification results under each proposal in a /listen commit draft.
+
+    Runs the deterministic citation check itself, merges the `verifier` agent's
+    JSON if given, and rewrites the draft atomically. Touches only the draft.
+    Prints numbers and statuses, never proposal or source text.
+    """
+    import json
+    from datetime import datetime
+
+    from scripts.lib import citation_check as cc
+    from scripts.lib import verification_record as vr
+
+    root = Path(args.config_root).expanduser()
+    drafts = (root / "memory" / "staged" / "commit-drafts").resolve()
+    draft = (drafts / f"{args.draft}.md").resolve()
+    if draft.parent != drafts or not draft.is_file():
+        print(f"ERROR: no commit draft named {args.draft}.md in {drafts}", file=sys.stderr)
+        return 1
+
+    verifier = None
+    verifier_state = "not-provided"
+    if args.verifier_results:
+        raw = sys.stdin.read() if args.verifier_results == "-" else Path(args.verifier_results).expanduser().read_text(encoding="utf-8")
+        try:
+            verifier = json.loads(raw)
+            verifier_state = "read" if isinstance(verifier, dict) and isinstance(verifier.get("results"), list) else "unusable"
+        except json.JSONDecodeError:
+            verifier_state = "unusable"
+
+    text = draft.read_text(encoding="utf-8", errors="replace")
+    records = vr.merge(cc.check_draft(text, root), verifier)
+    stamp = datetime.now().astimezone().isoformat(timespec="seconds")
+    atomic_write(draft, vr.apply_to_draft(text, records, stamp))
+    print(json.dumps({
+        "draft": draft.name,
+        "verifier_results": verifier_state,
+        "summary": vr.summarize(records),
+        "proposals": [r.as_dict() for r in records],
+    }, indent=2))
+    return 0
+
+
 def cmd_sync(args: argparse.Namespace) -> int:
     root = _resolve_sync_root(args.root)
     report = repo_sync.sync(root, host=args.host)
@@ -453,6 +496,15 @@ def build_parser() -> argparse.ArgumentParser:
     cite_p.add_argument("--config-root", required=True, help="Resolved config root")
     cite_p.add_argument("--draft", required=True, help="Draft date (YYYY-MM-DD) or path to the draft file")
     cite_p.set_defaults(func=cmd_check_citations)
+
+    rec_p = sub.add_parser(
+        "record-verification",
+        help="Write citation-check and verifier results under each proposal in a /listen commit draft",
+    )
+    rec_p.add_argument("--config-root", required=True, help="Resolved config root")
+    rec_p.add_argument("--draft", required=True, help="Draft date (YYYY-MM-DD)")
+    rec_p.add_argument("--verifier-results", help="Path to the verifier agent's JSON, or - for stdin; omit if it did not run")
+    rec_p.set_defaults(func=cmd_record_verification)
 
     sync_p = sub.add_parser("sync", help="Commit stragglers, pull, and push both repos; log every run")
     sync_p.add_argument("--root")

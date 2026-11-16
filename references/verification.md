@@ -64,6 +64,7 @@ A verdict is evidence for the user's decision. It does not make the decision.
 
 Callers record the result next to the claim, using these field names:
 
+- `Citation check:` — the deterministic pass result: `pass-verbatim`, `needs-verifier`, or `fail`
 - `Verification:` — `pass`, `fail`, `unverifiable`, or `not-run`
 - `Verifier confidence:` — `high`, `medium`, or `low`
 - `Evidence:` — source, locator, and a quote of 25 words or fewer
@@ -72,11 +73,23 @@ Callers record the result next to the claim, using these field names:
 `not-run` is the honest value when the verifier was unavailable or errored. A caller
 never writes `pass` for a claim that was not checked.
 
+For a `/listen` commit draft these fields are written by
+`python3 scripts/cortex_cli.py record-verification --config-root <root> --draft <date> [--verifier-results <file|->]`,
+never by hand. The script enforces the merge rules:
+
+- a deterministic `fail` stays `fail` whatever the verifier returned;
+- a proposal with no valid verifier result is `not-run`;
+- a `pass` at `low` confidence, or a `pass` with no evidence, is recorded as `unverifiable`;
+- quotes are cut to 25 words;
+- re-running replaces the earlier fields.
+
+It also writes a `## Verification` section with the four counts above `## Proposals`.
+
 ## Callers
 
 | Caller | Claims checked | Reference material | Since |
 |---|---|---|---|
-| — | none wired yet | — | — |
+| cortex `/listen` Step 4.5 | every mined memory proposal in the night's commit draft (explicit brief marks are skipped) | none | 4.33.0 |
 
 ## Measuring it
 
