@@ -4,6 +4,17 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.37.0] — /morning shows Needs a nudge (2026-11-16)
+
+### Added
+- `/morning` Step 2.95, **Needs a nudge**: shows the items growth's daily `/nudges` check staged (a quiet deal, an email with no reply, a follow-up owed), one at a time with the drafted message. Choices: use it, edit, snooze, dismiss, or later. Decisions are recorded in `memory/staged/nudges/ledger.jsonl`; a fully handled day file is moved to `staged/nudges/archive/`.
+- `cortex_cli.py open-nudges --config-root <root>`: read-only list of staged nudges not yet acted on, snoozed, or dismissed. `/morning` runs when there are open nudges even if there is no overnight draft.
+- Eval `morning-nudges`; 10 unit tests.
+
+### Guarantees
+- `/morning` does not send a nudge's draft without approval for that message, and never changes a deal. "That deal is dead" dismisses the nudge; any CRM change is a separate approved action.
+- A nudge is not a memory proposal; nothing here is merged into a node.
+
 ## [4.36.1] — note-taker tool limits (2026-11-16)
 
 ### Changed

@@ -457,6 +457,17 @@ def cmd_write_receipt(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_open_nudges(args: argparse.Namespace) -> int:
+    """Read-only: list staged nudges the user has not acted on, snoozed, or dismissed."""
+    import json
+
+    from scripts.lib import nudges_review as nr
+
+    root = Path(args.config_root).expanduser()
+    print(json.dumps(nr.open_nudges(root / "memory" / "staged" / "nudges"), indent=2))
+    return 0
+
+
 def cmd_sync(args: argparse.Namespace) -> int:
     root = _resolve_sync_root(args.root)
     report = repo_sync.sync(root, host=args.host)
@@ -589,6 +600,10 @@ def build_parser() -> argparse.ArgumentParser:
     rcp_p.add_argument("--error-code", action="append", help="Repeatable sanitized error code")
     rcp_p.add_argument("--extra", help="JSON object of extra metadata-only fields (counts, state_source, source_coverage)")
     rcp_p.set_defaults(func=cmd_write_receipt)
+
+    nud_p = sub.add_parser("open-nudges", help="Read-only: staged nudges still awaiting the user, for /morning")
+    nud_p.add_argument("--config-root", required=True, help="Resolved config root")
+    nud_p.set_defaults(func=cmd_open_nudges)
 
     sync_p = sub.add_parser("sync", help="Commit stragglers, pull, and push both repos; log every run")
     sync_p.add_argument("--root")
