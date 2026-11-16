@@ -49,7 +49,7 @@ Remove all memory entries for this node. This is irreversible.
 
 ## Step 3 — Confirm (autonomy-aware in v4.7.2+)
 
-**Consult autonomy mode** per `references/autonomy.md`: read `<config-root>/plugins/cortex.user-context.md` `autonomy:` section; fall back to defaults (default for `/forget`: `confirm`).
+**Consult autonomy mode** per `references/autonomy-policy.md` (Per-command confirmation modes): read `<config-root>/plugins/cortex.user-context.md` `autonomy:` section; fall back to defaults (default for `/forget`: `confirm`).
 
 - **Mode = `auto`**: skip the confirmation prompt entirely. Show what will happen as an inline statement ("Archiving [node-id]: removing [...] / writing [...]") and proceed to Step 4. The user opted into this; don't second-guess.
 - **Mode = `suggest`**: standard confirmation prompt as below, single yes/no gate.

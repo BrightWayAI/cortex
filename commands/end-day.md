@@ -162,7 +162,7 @@ Tonight's close will review these sources. Estimated cost shown before running.
 
 - **Quick mode:** only "Today's Brief responses" + "CRM" (note-taker mode: activity) are in scope; the card is trivially small. Show it only if there's more than the brief to review — otherwise skip straight to Step 2c.
 - **Full mode:** show the full card. Default checkbox states come from `<config-root>/plugins/cortex.user-context.md` `end_day.sources:` if set, else all-on except Slack.
-- Respect the **autonomy slider** (`references/autonomy.md`): in `auto` mode, skip the card and review the default-on set; in `suggest`/`confirm`, show it.
+- Respect the **autonomy slider** (`references/autonomy-policy.md`, Per-command confirmation modes): in `auto` mode, skip the card and review the default-on set; in `suggest`/`confirm`, show it.
 
 Whatever the user unchecks is **skipped and logged** so Step 6's summary is honest about what was and wasn't reviewed. Record the skipped set in memory for the close summary ("Reviewed: brief, transcripts, CRM. Skipped: email, Slack.").
 
