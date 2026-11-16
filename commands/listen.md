@@ -121,7 +121,7 @@ For each channel the user has joined, pull messages from `target_date` where (a)
 For each watched folder per user-context, list files modified or created on `target_date`. Metadata only. Write to `archive/<target_date>/drive.md`.
 
 ### Transcripts (per-adapter)
-For each configured note source per `/setup-sources` and `agents/lib/note-source-adapters.md`:
+For each configured note source per `/setup-sources` and `references/note-source-adapters.md`:
 - Granola: query Granola API for meetings dated `target_date`.
 - Gemini: query Gemini meetings.
 - Fireflies / Otter: same.

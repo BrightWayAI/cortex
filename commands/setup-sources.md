@@ -58,7 +58,7 @@ User picks one or more. For each picked, walk a per-provider interview (Step 3).
 
 ## Step 3 — Per-provider interview
 
-For each provider the user picks, ask its config questions. Use the adapter reference at `agents/lib/note-source-adapters.md` to know what to ask. Summary:
+For each provider the user picks, ask its config questions. Use the adapter reference at `references/note-source-adapters.md` to know what to ask. Summary:
 
 ### granola
 
@@ -122,7 +122,7 @@ No additional config needed.
 
 ## Step 4 — Health-check each source
 
-For each newly configured source (and any updated existing source), call the adapter's `health_check()` from `agents/lib/note-source-adapters.md`.
+For each newly configured source (and any updated existing source), call the adapter's `health_check()` from `references/note-source-adapters.md`.
 
 For each result:
 

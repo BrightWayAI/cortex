@@ -1,6 +1,6 @@
 # Note-source adapters
 
-This file is read by `transcript-reviewer` before each run. Each section below is a prompt-only adapter for one note-source provider. To add a new provider, add a new section here — no code change required.
+This file is read by `note-taker` (`mode: transcript`) before each run. Each section below is a prompt-only adapter for one note-source provider. To add a new provider, add a new section here — no code change required.
 
 Every adapter implements three concerns:
 
@@ -102,7 +102,7 @@ Gemini meeting notes can land in two places — Drive (the doc Gemini drops into
 3. Map similarly — extract title, datetime, attendees from the email subject and body.
 4. `source_url` ← Gmail thread URL.
 
-**Cross-source dedup hint:** Gemini-via-Drive and Gemini-via-Gmail almost always represent the same meeting twice. `transcript-reviewer`'s cross-source dedup step will merge them automatically (same title, datetime ±10 min, attendees match). Don't worry about it at the adapter level.
+**Cross-source dedup hint:** Gemini-via-Drive and Gemini-via-Gmail almost always represent the same meeting twice. `note-taker` (`mode: transcript`)'s cross-source dedup step will merge them automatically (same title, datetime ±10 min, attendees match). Don't worry about it at the adapter level.
 
 **`health_check()`:**
 - `drive-folder`: call `search_files` on the configured folder; pass if folder exists and has ≥ 1 matching file historically
@@ -284,4 +284,4 @@ To add support for a new note source (e.g., Zoom Cloud Recordings, Loom):
 1. Add a new `##` section to this file matching the pattern above (Config schema → Tools used → `fetch(time_window)` → `health_check()`).
 2. Decide the provider ID (lowercase, hyphenated).
 3. If the new provider's MCP isn't already in the user's stack, document the install step in the section's intro.
-4. No agent code changes required — `transcript-reviewer` reads this file at the top of each run and uses whichever adapter matches each configured source's `provider` field.
+4. No agent code changes required — `note-taker` (`mode: transcript`) reads this file at the top of each run and uses whichever adapter matches each configured source's `provider` field.

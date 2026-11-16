@@ -4,6 +4,15 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.30.1] — Adapter reference no longer registers as an agent (2026-11-16)
+
+### Fixed
+- `agents/lib/note-source-adapters.md` moved to `references/note-source-adapters.md`. It had no frontmatter, so hosts that load every Markdown file under `agents/` registered it as an agent named `cortex:lib:note-source-adapters` with every tool. It is a reference document, not an agent.
+- The adapter reference no longer names the retired `transcript-reviewer` agent; `note-taker` (`mode: transcript`) is the reader.
+
+### Changed
+- `/listen`, `/setup-sources`, `note-taker` and `references/note-sources.md` point at the new path. No behavior change.
+
 ## [4.30.0] — Unreachable config root is detected and explained (2026-10-30)
 
 Unreachable config root is now detected and explained at every entry point (cloud sessions especially).
