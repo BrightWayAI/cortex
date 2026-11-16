@@ -4,6 +4,11 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.37.1] — Plain plugin names (2026-11-16)
+
+### Changed
+- Docs and `/start-nucleus` use the plain plugin names (Ops, Comms, Clients, Growth). No behavior change.
+
 ## [4.37.0] — /morning shows Needs a nudge (2026-11-16)
 
 ### Added

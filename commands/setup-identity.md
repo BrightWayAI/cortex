@@ -290,7 +290,7 @@ Logic:
      ```
 5. Write user.md back.
 
-Symmetric note: Comms Desk's `/setup-voice` Step 3.5 does the same for `[[voice]]`. Both are idempotent. The end state: `user.md` Canonical Files section links to the canonical private profile files so Obsidian's graph view shows the connections.
+Symmetric note: Comms's `/setup-voice` Step 3.5 does the same for `[[voice]]`. Both are idempotent. The end state: `user.md` Canonical Files section links to the canonical private profile files so Obsidian's graph view shows the connections.
 
 **Why this matters:** `voice.md` and `identity.md` live under the private
 `memory/me/` scope, which the shared-memory index and relinker intentionally
