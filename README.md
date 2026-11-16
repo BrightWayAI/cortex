@@ -228,6 +228,7 @@ All commands from v3 still work. v4 added subagent invocation; v4.2 adds shared-
 | `/search [query]` | Cross-project search (delegates to `memory-librarian` for broad queries) |
 | `/forget [node]` | Archive a project |
 | `/cleanup` | Memory health audit |
+| `/migrate-plugin-configs` | One-time: archive legacy files in `<config-root>/plugins/` and create `plugins/ops/schedules.md`. Dry-run first; nothing is deleted |
 
 `/review` (weekly synthesis digest) and `/timeline` (chronological activity) moved to the `briefing` plugin (Today's Brief) on 2026-09-15, as part of consolidating every "what's going on" surface into one plugin.
 
