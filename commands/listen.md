@@ -239,7 +239,7 @@ For every ledger entry with `kind: "outreach"` whose `node` resolves to a known 
 
 After closures.json (1.5e), the snooze ledger + growth sync (1.5h), and the
 `## Reflection` section (1.5g) are all written, write one metadata-only receipt
-(schema 1.1.0, defined in ops's `commands/register-schedules.md` Step 5). Do not
+(schema 1.1.0, defined in Step 5 of the ops plugin's `/register-schedules` command). Do not
 hand-write the JSON:
 
 ```
