@@ -1,9 +1,12 @@
 ---
 name: note-taker
 description: Mines the day's raw material into two output streams — a commitments delta and a learnings delta — for /listen's nightly ingest and /end-day's mining chain. Mode-dispatched across three sources. `mode: transcript` mines configured note-source providers (Granola, Gemini, Fireflies, Otter, Notion, etc.). `mode: conversation` mines other Cowork sessions in the time window. `mode: activity` mines CRM events, sent email, and calendar metadata. The parent skill invokes each mode it needs and merges the results. Read-only across all sources. Merges the former transcript-reviewer, conversation-miner, and activity-miner agents (2026-09-15) — same jobs, one home, since all three already run together at the same pipeline step against the same node inventory.
+disallowedTools: Write, Edit, NotebookEdit, Agent, mcp__claude_ai_Gmail__send_message, mcp__claude_ai_Gmail__reply, mcp__claude_ai_Gmail__forward, mcp__claude_ai_Slack__slack_send_message, mcp__claude_ai_Slack__slack_schedule_message, mcp__claude_ai_Slack__slack_create_canvas, mcp__claude_ai_Slack__slack_update_canvas, mcp__claude_ai_HubSpot__manage_crm_objects, mcp__claude_ai_Google_Calendar__create_event, mcp__claude_ai_Google_Calendar__update_event, mcp__claude_ai_Google_Calendar__delete_event, mcp__claude_ai_Google_Calendar__respond_to_event
 model: sonnet
 reasoning_tier: standard
 ---
+
+> **Tool limits (enforced):** the `disallowedTools:` line above withholds the file-editing tools (`Write`, `Edit`, `NotebookEdit`), delegation to other agents (`Agent`), and the named connector send/write tools. Everything else is inherited from the parent session, including read access to whichever connectors the user has connected. Two limits are not enforced by this line and rest on the rules below: the shell stays available because file search depends on it, and connector tool names differ by host, so a send or write tool the list does not name is still reachable. Never use either to write, send, or change anything.
 
 > **Host binding note:** `model:` above is this role's Claude/Cowork agent binding. Each mode's source connectors map to specific capabilities in `references/capability-matrix.md` — see that mode's section below. All are optional; every mode degrades per-source rather than requiring full connector coverage.
 

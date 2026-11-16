@@ -4,6 +4,11 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.36.1] — note-taker tool limits (2026-11-16)
+
+### Changed
+- `note-taker` now declares tool limits: `disallowedTools` withholds `Write`, `Edit`, `NotebookEdit`, `Agent`, and the common connector send/write tools. Connector reads are still inherited. The shell is kept because file search depends on it; not writing through it remains a rule. No behavior change for a run that was already read-only.
+
 ## [4.36.0] — Run receipts record the accountable actor (2026-11-16)
 
 ### Added
