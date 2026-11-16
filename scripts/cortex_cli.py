@@ -394,6 +394,27 @@ def cmd_record_verification(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_triage_draft(args: argparse.Namespace) -> int:
+    """Read-only: sort a commit draft's proposals into /morning review groups."""
+    import json
+
+    from scripts.lib import draft_triage as dt
+
+    root = Path(args.config_root).expanduser()
+    drafts = (root / "memory" / "staged" / "commit-drafts").resolve()
+    draft = (drafts / f"{args.draft}.md").resolve()
+    if draft.parent != drafts or not draft.is_file():
+        print(f"ERROR: no commit draft named {args.draft}.md in {drafts}", file=sys.stderr)
+        return 1
+    items = dt.triage_draft(draft.read_text(encoding="utf-8", errors="replace"))
+    print(json.dumps({
+        "draft": draft.name,
+        "summary": dt.summarize(items),
+        "proposals": [t.as_dict() for t in items],
+    }, indent=2))
+    return 0
+
+
 def cmd_sync(args: argparse.Namespace) -> int:
     root = _resolve_sync_root(args.root)
     report = repo_sync.sync(root, host=args.host)
@@ -505,6 +526,14 @@ def build_parser() -> argparse.ArgumentParser:
     rec_p.add_argument("--draft", required=True, help="Draft date (YYYY-MM-DD)")
     rec_p.add_argument("--verifier-results", help="Path to the verifier agent's JSON, or - for stdin; omit if it did not run")
     rec_p.set_defaults(func=cmd_record_verification)
+
+    tri_p = sub.add_parser(
+        "triage-draft",
+        help="Read-only: sort a /listen commit draft's proposals into batch / review / brief groups for /morning",
+    )
+    tri_p.add_argument("--config-root", required=True, help="Resolved config root")
+    tri_p.add_argument("--draft", required=True, help="Draft date (YYYY-MM-DD)")
+    tri_p.set_defaults(func=cmd_triage_draft)
 
     sync_p = sub.add_parser("sync", help="Commit stragglers, pull, and push both repos; log every run")
     sync_p.add_argument("--root")
