@@ -4,6 +4,12 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.38.1] — Eval fixture and quality tests (2026-11-16)
+
+### Added
+- The eval fixture (`evals/_fixtures/seed-config-root.sh`) now also seeds plugin settings, two contacts, and a prospect, so other plugins' commands have something to work from. Growth, clients, and briefing hold copies.
+- Output-quality evals `morning-quality` and `listen-quality`: they judge whether the output is right for the fixture's facts, not just whether the command fired.
+
 ## [4.38.0] — Decision records (2026-11-16)
 
 ### Added
