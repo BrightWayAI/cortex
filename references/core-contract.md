@@ -195,7 +195,7 @@ convention.
 - **Additive with occasional demotion:** `## Knowledge` subsections — new
   entries are appended; existing entries move to `## Demoted knowledge`
   rather than being deleted (see decay model and concept-drift rules in
-  `commands/remember.md` §B/§C).
+  `references/remember-formats.md`).
 - Everything else (Notes, free-form context) is user-owned prose and may be
   edited freely by the user; automated workflows only append to it.
 
@@ -311,7 +311,7 @@ whether it contradicts, supersedes, or refines an existing entry of the
 same type on the target node. `RECIPE` entries are additive and skip this
 check. `DECISION` entries supersede through their own later-decision path.
 `CORRECTION` entries encode their own supersede relationship explicitly
-and skip the check. Full procedure: `commands/remember.md` §C.2.
+and skip the check. Full procedure: `references/remember-formats.md` (Concept-drift check).
 
 ## 13. Privacy classification
 

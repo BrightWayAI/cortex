@@ -4,7 +4,7 @@ description: Quick one-liner capture to a project node. Alias for `/remember --q
 
 # /note $ARGUMENTS
 
-`/note` is an alias for `/remember --quick`. Rewrite the invocation as `/remember --quick [node] [content]` and follow that command's Quick mode workflow exactly — same parsing, same storage path, same one-line confirmation, same behavior notes. Do not duplicate the workflow here; `commands/remember.md` is the single source of truth.
+`/note` is an alias for `/remember --quick`. Rewrite the invocation as `/remember --quick [node] [content]` and follow that command's Quick mode exactly — same parsing, same storage path, same one-line confirmation, same behavior notes. Do not duplicate the workflow here; `commands/remember.md` is the single source of truth.
 
 ```
 /note client:acme Kim confirmed the March 15 deadline

@@ -62,7 +62,7 @@ Regeneration procedure:
 1. Read existing DASHBOARD.md.
 2. Parse the "Active Nodes" section (headers + their summary content).
 3. For each node ID found as a section header, determine its actual file path under `memory/` (e.g., `client:acme-corp` → `memory/client/acme-corp.md`; `brightway-profile` → `memory/brightway-profile.md`).
-4. Rewrite DASHBOARD using the wikilink-emitting template from `commands/remember.md` "Dashboard File Format" section:
+4. Rewrite DASHBOARD using the wikilink-emitting template in `references/remember-formats.md` (Dashboard format):
    - Convert `### brightway-profile` → `### [[brightway-profile]]`
    - Convert any plain `[node-id]` token to `[[node-id]]`
    - Preserve section content (summaries, P0 lists, etc.); only the references get wikilinked

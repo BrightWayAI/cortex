@@ -321,7 +321,7 @@ If Cowork artifact tools aren't available (Claude Code), skip Step 4.0 and ask t
 
 Ask the user, conversationally, one at a time (pre-filled candidates from Step 4.0 shown as suggestions, not assumptions):
 
-1. **"Biggest thing that got done today?"** — pre-fill with the most-substantial `done` task from Step 2c.4. User can accept, edit, or override. Captured as an INSIGHT (or DECISION if it was a choice) on the relevant project node, per the consolidated taxonomy (`/remember` B.3: Insight / Decision / Gotcha / Correction).
+1. **"Biggest thing that got done today?"** — pre-fill with the most-substantial `done` task from Step 2c.4. User can accept, edit, or override. Captured as an INSIGHT (or DECISION if it was a choice) on the relevant project node.
 2. **"What blocked you, if anything?"** (optional) — pre-fill with candidate blockers from annotations. Captured as a GOTCHA if structural, or as a BLOCKER on the project's open threads.
 3. **"What's the one thing tomorrow has to move?"** — pre-fill with candidate priorities from annotations. Captured as a `[P0]` next-action on the relevant project node, dated tomorrow, AND fed to Step 4.5 + section 1 (Center of Gravity) of tomorrow's brief.
 
