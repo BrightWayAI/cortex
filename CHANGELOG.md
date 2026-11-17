@@ -4,6 +4,34 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.43.0] — /end-day trimmed and its contradictions resolved (2026-11-17)
+
+`/end-day` cut from 8,913 to 2,493 words. Formats, tables and procedures moved
+to `references/end-day-formats.md`; the command file is now the order of
+operations and the rules. Step numbers are unchanged.
+
+### Changed
+- Quick mode now mines CRM activity (on by default on the source card). The
+  file previously said both that it did and that it did not.
+- Nothing mined reaches memory unreviewed, in either mode. Brief learnings in
+  quick mode go through the review gate; the "committed directly" line is gone.
+- Brief marks are shown as one batch for a yes before their memory writes are
+  applied; suppressions go to Forgettings in the review.
+- CRM writes (from brief marks and the HubSpot log step) need approval for each
+  item, matching the autonomy policy. The `auto` shortcut that wrote to HubSpot
+  without a prompt is removed.
+- Run order is stated: the brief is mined first and the review runs after every
+  miner has finished.
+
+### Fixed
+- Reference to a non-existent "B.4" section removed.
+- Index, hot cache, chronicle and memory commit always run, including when
+  `briefing` is not installed.
+- A held write lock is reported and the commit skipped; there is no override.
+
+### Added
+- `evals/end-day-quick-review`.
+
 ## [4.42.1] — Remove real client and contact names (2026-11-17)
 
 Privacy fix. Examples, an eval prompt, a test fixture and older changelog
