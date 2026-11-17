@@ -7,6 +7,8 @@ set -euo pipefail
 ROOT="$PWD/cortex-root"
 TODAY="$(date +%Y-%m-%d)"
 YESTERDAY="$(date -v-1d +%Y-%m-%d 2>/dev/null || date -d yesterday +%Y-%m-%d)"
+QUIET_SINCE="$(date -v-20d +%Y-%m-%d 2>/dev/null || date -d '20 days ago' +%Y-%m-%d)"
+LAST_WEEK="$(date -v-6d +%Y-%m-%d 2>/dev/null || date -d '6 days ago' +%Y-%m-%d)"
 
 mkdir -p "$ROOT/memory/client" "$ROOT/memory/me" \
          "$ROOT/memory/staged/commit-drafts" "$ROOT/archive/$YESTERDAY" \
@@ -144,3 +146,184 @@ Total proposals: 2 across 1 nodes.
 - **Confidence:** high
 - **Conflicts:** already present as an open P0 thread
 EOF
+
+# ---------------------------------------------------------------------------
+# Plugin settings and relationship data, so growth, clients, and briefing
+# commands have something to work from. Still entirely fictional.
+# ---------------------------------------------------------------------------
+mkdir -p "$ROOT/memory/person" "$ROOT/memory/bizdev" "$ROOT/relationships"
+
+cat > "$ROOT/memory/me/voice.md" <<EOF
+# Voice
+- Plain and direct. Short sentences. No exclamation marks.
+- Never say "just checking in", "circling back", or "touching base".
+- Sign off: "— Sam"
+EOF
+
+cat > "$ROOT/memory/me/surfacing-prefs.md" <<EOF
+# Surfacing preferences
+## Suppress
+- (none)
+EOF
+
+cat > "$ROOT/memory/person/dana-reyes.md" <<EOF
+---
+type: person
+last_meaningful_contact: $YESTERDAY
+relationships:
+  tier: strategic
+  intent: client_delivery
+  buckets: [relationship]
+  relationship_class: business
+  icp_fit: primary
+---
+# Dana Reyes
+
+## Identity
+- Head of Learning at Northwind Learning. Decision-maker for the pilot.
+
+## Relationship
+- Client since the kickoff on $YESTERDAY. Warm.
+
+## Recent interactions
+- $YESTERDAY — Kickoff call. Agreed a two-phase pilot.
+
+## Open threads
+- I owe Dana the pilot scope summary by Friday.
+EOF
+
+cat > "$ROOT/memory/person/lee-park.md" <<EOF
+---
+type: person
+last_meaningful_contact: $QUIET_SINCE
+relationships:
+  tier: strategic
+  intent: reciprocal
+  buckets: [relationship]
+  relationship_class: business
+  icp_fit: none
+---
+# Lee Park
+
+## Identity
+- Independent instructional designer. Introduced me to Northwind.
+
+## Relationship
+- Referral source. Last spoke $QUIET_SINCE.
+
+## Recent interactions
+- $QUIET_SINCE — Coffee. Lee mentioned taking on a new university client in the spring.
+
+## Open threads
+- I said I would thank Lee properly once Northwind signed. Not done yet.
+EOF
+
+cat > "$ROOT/memory/bizdev/atlas-ventures.md" <<EOF
+---
+type: bizdev
+status: active
+---
+# Atlas Ventures
+
+## Current state
+Discovery call held $QUIET_SINCE with Priya Shah. They asked for two sample modules. Sent the samples the same day. No reply since.
+
+## Open threads
+- **[WAITING:Priya Shah]** Reaction to the sample modules.
+EOF
+
+cat >> "$ROOT/memory/client/northwind.md" <<EOF
+- [$LAST_WEEK] Contract signed for a two-phase pilot.
+- [$YESTERDAY] Drafted the outline for the pilot scope summary (not yet sent).
+
+## People
+- [[person/dana-reyes]] — Head of Learning, decision-maker.
+EOF
+
+cat > "$ROOT/plugins/growth.user-context.md" <<EOF
+# growth user context (eval fixture)
+
+## Identity (minimal)
+- Name: Sample User (Sam). Company: Example Studio, a small learning-design firm.
+
+## ICP & signal sourcing
+- Primary ICP: learning and development leaders at mid-size companies.
+- Apollo: not enabled.
+
+## Tiers
+- inner: every 14 days. strategic: every 14 days. operational: every 90 days.
+
+## Buckets
+- new_business, relationship_building, network_expansion. Hide empty buckets: yes.
+
+## Network-expansion voices
+### Voice: default
+- Uses memory/me/voice.md.
+
+## Time budget
+- Typical: 20 minutes a day.
+
+## CRM
+- Tool: none connected.
+EOF
+
+cat > "$ROOT/plugins/clients.user-context.md" <<EOF
+# clients user context (eval fixture)
+
+## Identity
+- Example Studio.
+
+## Offerings
+- Learning design pilots.
+
+## Access zones
+- **finance** (restricted) — Shared drive: Example Finance. Path pattern: Agreements/[Client]/[YYYY-MM Engagement]/. Expected access: Sam only.
+- **pipeline** (restricted) — Shared drive: Example Finance. Path pattern: Pipeline/[Client]/. Expected access: Sam only.
+- **project** (open) — Shared drive: Example Projects. Path pattern: Active Clients/[Client]/. Expected access: Sam and contractors.
+
+## Naming conventions
+- **Client folder name:** the client's plain name, e.g. "Northwind Learning".
+- **Engagement folder pattern:** YYYY-MM [Engagement Name]
+- **Executed-contract file pattern:** YYYY-MM-DD [Client] — [Engagement] SOW (Executed).pdf
+- **Superseded-draft pattern:** _Archive/ under the engagement folder
+- **Scope Brief file name:** [Client] — [Engagement] Scope Brief
+- **Date format:** YYYY-MM-DD
+
+## Notification recipients
+- Finance: sam@example.com. Delivery: sam@example.com.
+
+## Client engagements
+- Northwind Learning — two-phase pilot. Phase 1: scope and one sample module. Primary contact: Dana Reyes. Node: client/northwind.
+EOF
+
+cat > "$ROOT/plugins/clients-status.user-context.md" <<EOF
+# client status user context (eval fixture)
+
+## Cadence
+- Weekly, sent Friday.
+
+## Status template
+- Default template.
+
+## Per-client overrides
+- none
+
+## Optional inclusions
+- Include time-tracking hours: no.
+- Budget line: no.
+
+## Client engagements
+- Northwind Learning — active.
+EOF
+
+cat > "$ROOT/plugins/briefing.user-context.md" <<EOF
+# briefing user context (eval fixture)
+
+## Feature toggles
+- **brief_enabled:** true
+- **auto_open_artifact:** false
+
+## Empty-state behavior
+- calendar: hide. tasks: hide. outreach: hide.
+EOF
+
