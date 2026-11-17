@@ -4,6 +4,26 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.42.0] — /cleanup trimmed (2026-11-16)
+
+### Changed
+- `/cleanup` is 1,687 words, down from 3,230, with the same thirteen checks. Display layouts and prompts moved to `references/cleanup-formats.md`; version tags and rationale prose are gone; the checks now run in letter order (J was after K).
+
+### Behavior tightened (each resolves a contradiction in the old text toward the safer reading)
+- `auto` mode runs without asking only the actions that can be undone and stay inside memory (consolidate, escalate, archive, demote, re-stamp). Anything that removes content still asks. The old text said both "never auto-execute" and "execute all proposed actions without the gate".
+- Merging an isolated node archives the original instead of deleting it. The old text said "default to archive over delete" and then "delete the original file".
+- Accepting a decision-revisit flag no longer edits a decision record. It notes the flag beside the record's pointer on the affected node; an older inline `DECISION` entry still gets `Status: revisit-now`. Decision records (4.38) are superseded, never edited.
+- A skip reason given in words is mapped to one of the four codes and the words are not recorded.
+
+### Fixed
+- Removed a reference to `/recall person:<slug> --unarchive`, a flag `/recall` does not have.
+- The index refresh uses `cortex_cli.py reindex`, like every other command.
+- Findings G to L are stated to be walked after the A to F menu, each with its own choices, in every mode; the old text gave no order.
+- Check K no longer misdescribes check G.
+
+### Added
+- Eval `cleanup-safe-defaults`.
+
 ## [4.41.0] — /recall trimmed (2026-11-16)
 
 ### Changed
