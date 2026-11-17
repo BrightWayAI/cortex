@@ -1,470 +1,179 @@
 ---
-description: Interactive morning routine. Reads the most-recent `<config-root>/memory/staged/commit-drafts/` file (produced overnight by `/listen`), walks the user through each proposal (accept / reject / edit / defer), applies accepted proposals to active memory nodes, refreshes hot.md and the memory index, captures a short reflection and seeds today's brief priorities/outreach (v4.16+, ported from `/end-day`), and optionally chains into `/brief`. The JARVIS morning.
+description: Interactive morning routine. Reads the most-recent `<config-root>/memory/staged/commit-drafts/` file (produced overnight by `/listen`), walks the user through the proposals (verified ones together, the rest one at a time), applies accepted proposals to active memory nodes, shows anything that went quiet, refreshes hot.md and the memory index, captures a short reflection and seeds today's brief priorities/outreach, and optionally chains into `/brief`.
 ---
 
 # /morning
 
-You are running the user's morning routine. Overnight, `/listen` ingested yesterday's substrate and staged a draft of proposed memory commits. Your job is to walk that draft with the user efficiently — accept what's right, reject what isn't, capture edits, and hand off to the brief.
-
----
+Walk the draft `/listen` staged overnight with the user, then hand off to the brief. Every accepted proposal is confirmed by the user; nothing merges silently.
 
 ## Step G — Config-root guard (run first)
 
 Run `python3 scripts/cortex_cli.py root-status`. If it exits non-zero, **stop** and show its sentence verbatim; write nothing anywhere else and do not ask for folder access more than once per session. Exception: in a remote session with the sync repos attached, run the documented `bootstrap` (`references/core-contract.md` §11B) once and re-check before stopping.
 
-## Step 0 — Resolve config root and find the draft
+## Step 0 — Find the draft
 
-Standard config-root pattern. On a host with no resolved root (a cloud chat), run
-`python3 scripts/cortex_cli.py bootstrap --print-env` first; it pulls both repos so the latest
-draft, `me/`, and `briefs/` are present without connecting a Mac folder. If the root is a
-synced checkout, run `cortex_cli.py sync` before reading (pull) and again after the final
-write step (push); report a failed sync as an error, never silently.
+The helper scripts named below (`memory-diff`, `triage-draft`, `open-nudges`) only read. On a host where they cannot be run, do the same reading by hand, say so once, and continue; only Step G stops the run.
 
-Locate the most-recent draft: list `<config-root>/memory/staged/commit-drafts/*.md` sorted by date descending (use the date in the filename, not mtime).
+On a host with no resolved root (a cloud chat), run `python3 scripts/cortex_cli.py bootstrap --print-env` first. If the root is a synced checkout, run `cortex_cli.py sync` before reading and after the final write; always report a failed sync.
 
-- **No draft found** → "No `/listen` draft to merge. Did `/listen` run last night? Recent runs:" → list any `archive/<date>/_index.md` from the last 3 days. Offer to run `/listen` now for yesterday. Otherwise exit.
-- **Draft exists** → continue.
+Find the most recent draft in `<config-root>/memory/staged/commit-drafts/*.md` by the date in the filename, not mtime.
 
-Also check for open nudges (growth 0.7.0+):
+- `--date YYYY-MM-DD` → use that draft instead.
+- `--discard` → move the latest draft to `staged/commit-drafts/archive/<date>-discarded.md` and exit.
 
-```
-python3 scripts/cortex_cli.py open-nudges --config-root <config-root>
-```
+Check for open nudges: `python3 scripts/cortex_cli.py open-nudges --config-root <config-root>` (read-only).
 
-It is read-only and returns the staged nudges the user has not yet acted on. If there is no draft but there are open nudges, do not exit: say "No overnight draft to review," skip Steps 0.5 through 2.9 and Step 3, and go to Step 2.95.
+- **No draft, no open nudges** → "No `/listen` draft to merge. Did `/listen` run last night?" List any `archive/<date>/_index.md` from the last 3 days, offer to run `/listen` for yesterday, otherwise exit.
+- **No draft, open nudges** → say "No overnight draft to review," skip Steps 0.5 through 3, and go to Step 2.95.
 
-If the user passed `--date YYYY-MM-DD`, merge that specific draft instead of the latest.
+## Step 0.5 — Memory diff review
 
-If the user passed `--discard`, move the latest draft to `staged/commit-drafts/archive/<date>-discarded.md` and exit without merging.
+Shows what already landed in memory since the previous commit. Skip if `cortex.user-context.md` has `memory_as_git.morning_diff: false`.
 
----
+Run `python3 scripts/cortex_cli.py memory-diff --config-root <config-root>` (read-only) and act on `status`:
 
-## Step 0.5 — Memory diff review (v4.12.0+; race-aware in v4.12.2+)
+| `status` | Do |
+|---|---|
+| `not-git`, `no-changes` | Skip silently. |
+| `fresh` | Say there is no prior commit to diff against. Continue. |
+| `no-overnight-commit` | Say there has been no memory commit since today's last close. Continue. |
+| `listen-running` | "Overnight /listen is still running (started <N> min ago). Wait 2 min and re-run /morning, or skip the diff review now?" Wait → exit. Skip → continue and note it. |
+| `dirty` | "⚠ Uncommitted memory changes from yesterday — the last close may have failed." Show `dirty_files`. Offer **(c)ommit-now** (`git add . && git commit -m "Recovery commit (committed by /morning Step 0.5)"` in the memory folder), **(i)nspect** (`git status` and `git diff`, then ask again), or **(s)kip**. |
+| `changed` | Show the previous commit date, nodes changed per directory, insertions, deletions, and files. Then: "⚠ The diff contains raw memory text. If you are screen-sharing, it will show. Open the diff? (y / skim / skip)". `y` → `git diff HEAD~1..HEAD`, 50 lines at a time. `skim` → the first 5 lines of each file's diff. |
 
-If memory-as-git is enabled, surface what changed in memory overnight BEFORE walking the listen draft. The diff is your safety net — it catches anything that crept into memory unintentionally (auto-commits, /listen merges from a prior /morning, off-hours /remember runs).
-
-Check whether `<config-root>/memory/.git/` exists.
-- **If not** → skip silently (memory-as-git not enabled).
-- **If exists** → proceed.
-
-### Step 0.5.0 — Pre-flight checks (v4.12.2+)
-
-Before computing the diff, three safety checks:
-
-```
-cd <config-root>/memory
-
-# Check 1: HEAD~1 must exist (handles first-day-of-memory-as-git case cleanly)
-if ! git rev-parse --verify HEAD~1 2>/dev/null:
-  Surface: "Memory-as-git is fresh — no prior commit to diff against. First diff will appear after the next /end-day."
-  Continue to Step 1.
-
-# Check 2: working tree must be clean (handles failed /end-day Step 5.8 case)
-dirty_count = git status --porcelain | wc -l
-if dirty_count > 0:
-  Surface: "⚠ Uncommitted memory changes from yesterday — looks like /end-day Step 5.8 may have failed. Files dirty:
-    <show first 10 lines of `git status --porcelain`>
-  Options:
-    (c)ommit-now: stage + commit with message 'Recovery from prior /end-day'
-    (i)nspect: show full status + diff, then re-prompt
-    (s)kip: continue to Step 1 without diff review (the dirty state remains)"
-  On `c`: git add . && git commit -m "Recovery commit from prior /end-day Step 5.8 failure (committed by /morning Step 0.5)"
-  On `i`: render `git status` + `git diff` paginated, then re-prompt
-  On `s`: continue to Step 1; the diff review for today's HEAD~1..HEAD will reflect the most-recent successful commit (which may be from 2+ days ago).
-
-# Check 3: /listen must not be mid-write (race avoidance)
-if exists <config-root>/memory/staged/queues/listen-in-progress:
-  Read its content (format: "<iso8601-started>|<expected-completion>")
-  if now < expected_completion + 2min grace:
-    Surface: "Overnight /listen is still running (started <X> min ago). Memory diff may be mid-update. Wait 2 min and re-run /morning, or skip diff review now and review later?"
-    On wait: exit /morning entirely with "Re-run when /listen finishes."
-    On skip: continue without diff, with note "Skipped diff review — /listen mid-write."
-  else:
-    Treat as stale marker; remove and proceed.
-```
-
-### Step 0.5.1 — Compute and render the diff
-
-```
-HEAD_prev_date = git log -1 --format=%cd --date=short HEAD~1
-
-If HEAD_prev_date == today_local (no overnight commit happened, e.g., /end-day ran twice today):
-  Surface: "No memory commit since today's last close. Skipping diff review."
-  Continue to Step 1.
-
-Else:
-  Compute git diff HEAD~1..HEAD --stat:
-    - Files changed (count by directory: client/, person/, topic/, workstream/, bizdev/, team/, etc.)
-    - Insertions / deletions per file
-
-  Surface a summary block:
-    "Memory changed since yesterday's commit (<HEAD_prev_date>):
-       - <N> client nodes updated (<slug list, max 5>)
-       - <M> person pages added (<slug list>)
-       - <K> topic nodes modified
-       - <total> insertions, <total> deletions across <files> files
-
-     ⚠ Diff content includes raw memory text (person names, conversation snippets, decision rationales). If you're screen-sharing or screen-recording this session, the diff will expose that content.
-
-     Open the diff? (y / skim / skip)"
-
-  On `y`:
-    Display git diff HEAD~1..HEAD paginated (50 lines at a time, with q-to-skip).
-  On `skim`:
-    Display file-level summary only (already shown above) plus the first 5 lines of each changed file's diff hunk.
-  On `skip`:
-    Continue to Step 1 without rendering.
-```
-
-The diff IS the review surface. The user can spot bad commits before they compound into wrong context for the day's sessions. If something looks wrong, `git revert HEAD` rolls back the last day's commit.
-
-**Why this runs before Step 1 (the listen draft walk):** the diff captures what HAS landed (post-commit); the listen draft captures what's STAGED (pre-commit). User reviews HEAD first to know what they're already living with, then reviews proposals to decide what else to add.
-
-If `cortex.user-context.md` has `memory_as_git.morning_diff: false`, skip this step (some users prefer to check diffs out-of-band via Obsidian's Git plugin).
-
----
+If `stale_listen_marker` is true, delete `<config-root>/memory/staged/queues/listen-in-progress`. If the diff looks wrong, tell the user `git revert HEAD` rolls back the last commit; do not run it unasked.
 
 ## Step 1 — Show the overnight summary
 
-```
-Good morning. Overnight /listen ingested yesterday:
+Show the **Overnight summary** block from `references/morning-formats.md`: what was ingested, proposals by kind, the `Checked overnight` counts, sources status, the `To review` counts, the `Needs a nudge` line, and "Ready to go through them? (y/n/skim)".
 
-  <N> calendar events
-  <M> inbox threads (you in To/Cc)
-  <K> Slack mentions
-  <L> Drive changes
-  <T> transcripts (<adapter1>: <count>, <adapter2>: <count>, ...)
-
-Proposals staged: <P> total
-Checked overnight: <p> pass, <f> fail, <u> unverifiable, <n> not run
-  - <a> knowledge entries (INSIGHT / MODEL / GOTCHA / LESSON / RECIPE / CORRECTION)
-  - <b> person-page updates
-  - <c> commitment captures (to/from others)
-  - <d> thread updates / closures
-
-Sources status: <K> ok, <U> skipped/missing, <E> errors
-(see archive/<date>/_index.md for details if errors)
-
-To review: <R> need your decision one at a time, <B> verified and ready to accept together, <M> from yesterday's brief
-
-Needs a nudge: <N> (<a> quiet deals, <b> with no reply, <c> you owe)
-
-Ready to go through them? (y/n/skim)
-```
-
-Take the `Checked overnight` counts from the draft's `## Verification` section (written by `/listen` Step 4.5, v4.33+). If the draft has no such section (an older draft, or verification did not run), print `Checked overnight: not run` instead of counts.
-
-Leave out the `Needs a nudge` line when `open-nudges` (Step 0) returned none.
-
-Take the `To review` counts from:
-
-```
-python3 scripts/cortex_cli.py triage-draft --config-root <config-root> --draft <date>
-```
-
-It sorts every open proposal into `review`, `batch`, or `brief` and is read-only. Keep its output: Step 2 uses the same grouping.
-
-- `y` (default) → Step 2
-- `n` → exit, leave draft in place for later
-- `skim` → render every proposal as a one-line summary, no per-proposal gates; user picks numbers to dig into
-
----
+- `Checked overnight` comes from the draft's `## Verification` section; with none, print `Checked overnight: not run`.
+- `To review` comes from `python3 scripts/cortex_cli.py triage-draft --config-root <config-root> --draft <date>` (read-only). Step 2 uses the same grouping.
+- Omit the `Needs a nudge` line when `open-nudges` returned none.
+- `y` (default) → Step 2. `n` → exit, leaving the draft. `skim` → one line per proposal with no per-proposal gates; the user picks numbers to open. In skim mode `accept-all` and `accept-all-high` apply only to the `batch` group and must be typed by the user; `review` proposals are still decided one at a time.
 
 ## Step 2 — Review the proposals
 
-The review is sorted by risk, following the autonomy policy's tiers (`references/autonomy-policy.md`). The user's time goes to what needs a decision; what was verified overnight is accepted together. The order is:
+Sorted by risk, per the autonomy policy's tiers (`references/autonomy-policy.md`): the `brief` group first (2a), then `review` one at a time (2b), then `batch` once as a list (2c).
 
-1. **From yesterday's brief** — the `brief` group (2a).
-2. **Needs your decision** — the `review` group, one at a time (2b).
-3. **Verified overnight** — the `batch` group, shown once as a list (2c).
+Use the grouping from `triage-draft`; do not re-sort it. A proposal is in `batch` only if the draft records `Verification: pass` and `Conflicts: none`. Everything else not from the brief is in `review`, including every proposal in an unchecked draft.
 
-Use the grouping from `triage-draft` (Step 1). Do not re-sort by your own judgment: a proposal is in `batch` only if the draft records `Verification: pass` and `Conflicts: none`. Everything else that is not from the brief is in `review`, including every proposal in a draft that was never checked.
-
-**If the user's autonomy policy has no medium-risk tier** (a 1.0.0-shape policy with `Ask first`, or `policy_version: "1.0.0-kept"`), there is no batch: walk the `batch` group one at a time in 2b, after the `review` group. Say once: "Your policy has no batch tier, so I'll go through the verified ones individually. `/start-nucleus` can change that."
+**If the user's autonomy policy has no medium-risk tier** (a 1.0.0-shape policy with `Ask first`, or `policy_version: "1.0.0-kept"`), there is no batch: walk the `batch` group one at a time after the `review` group, and say once that `/start-nucleus` can change that.
 
 ### 2a — From yesterday's brief
 
-**Brief-derived proposals go first (v4.27+).** Before the priority/source-agent grouping below, separate out any proposal tagged `from: listen-step-1.5` (brief mining — closures, delegations, reprioritizations, annotation carries, touch-logs, "likely done" inferences) into its own group, headed **"From yesterday's brief."** Within that group, split further:
+Proposals tagged `from: listen-step-1.5`, headed **"From yesterday's brief."**
 
-- **Explicit marks** (done/delegate/skip/not_important/reprioritized/annotations — anything the user directly clicked in the artifact) — these are already the user's decision, not a proposal to second-guess. Offer a single **bulk-accept**: "N items from yesterday's brief — done/delegated/skipped/annotated as you marked them. Accept all? (y / walk individually)". Default `y` still shows the list first (one line each), it just doesn't gate per-item.
-- **Inferred closures** ("likely done" from Step 1.5d, no explicit mark) — walk these **one at a time** like any other proposal, since they're a guess, not a click. Same `(a)ccept / (r)eject / (e)dit / (d)efer / (s)kip-remaining` controls.
+- **Explicit marks** (done, delegate, skip, not_important, reprioritized, annotations) are already the user's decision. Show the list, one line each, and offer one bulk accept: "N items from yesterday's brief, as you marked them. Accept all? (y / walk individually)".
+- **Inferred closures** ("likely done", no explicit mark) are a guess. Walk them one at a time with the 2b choices.
 
-A mark the user made applies to memory as one batch (medium risk). Any part of a brief proposal that changes something outside memory, such as completing a HubSpot task or reassigning a CRM task, is high risk: preview that action and get approval for it on its own, immediately before doing it. Accepting the batch does not approve it.
+A mark applies to memory as one batch (medium risk). Any part of a brief proposal that changes something outside memory, such as completing a HubSpot task, is high risk: preview it and get approval for it on its own, immediately before doing it. Accepting the batch does not approve it.
 
 ### 2b — Needs your decision (one at a time)
 
-Walk the `review` group. Order: verification `fail` first, then `unverifiable`, then conflicts, then `not-run` / not checked; within each, by priority (Critical / High / Medium / Low).
+Walk the `review` group. Order: verification `fail`, then `unverifiable`, then conflicts, then `not-run` or not checked; within each, by priority (Critical / High / Medium / Low).
 
-Open with one line that says what is here and why, for example: "4 need your decision: 2 the overnight check could not support, 1 conflicts with an existing entry, 1 was not checked."
+Open with one line saying what is here and why: "4 need your decision: 2 the overnight check could not support, 1 conflicts with an existing entry, 1 was not checked."
 
+Show each with the **Proposal** block from `references/morning-formats.md`: node and type, confidence, source, the `Check` line, conflicts, the current entry, the proposed content, and `(a)ccept / (r)eject / (e)dit / (d)efer / (s)kip-remaining`.
 
-For each proposal:
+`Check` is the draft's `Verification` result (`references/verification.md`), shown as recorded; with none, show `Check: not run`. For a `fail` or `unverifiable` proposal, say why in one plain sentence before the choices ("The transcript says Friday, not Wednesday."). The check is evidence, not a decision: every proposal gets the same choices, and nothing is accepted or rejected for the user because of it. Do not show raw archive content unless the user asks for a proposal's source.
 
-```
-[Proposal N of P] <node-path> — <type> from <agent>
-  Confidence: <high | medium | low>
-  Source: archive/<date>/<file> · <section/line>
-  Check: <Verification> (<Verifier confidence>) — <Evidence, or the Verification reasons if it failed>
-  Conflicts: <list or "none">
+**accept** — apply the proposal by its `Type`, then append `[YYYY-MM-DD] /morning merge: <one-line summary> — proposed by <agent>` to the node's `## Changelog`. Do not copy the five verification fields into the node.
 
-  Current state in `<node-path>`:
-  > <verbatim quote of relevant existing entry, or "no entry — new">
+- **Knowledge entry** → append to the matching `## Knowledge` subsection (Insights / Models / Gotchas / Lessons / Recipes / Corrections) with `[confirmed:today] [recalled:today] [by:<actor-id>]`, actor ID from the active identity.
+- **Person-update** → append to `## Recent interactions` or `## Notes` on the person page; create the page if needed.
+- **Commitment** → append to `## Open threads` (the user owes it) or `## Waiting on` (someone owes the user).
+- **Thread-update** → change the named open thread (status, note, or close).
+- **Decision** → write a decision record with `python3 scripts/cortex_cli.py record-decision ... --recorded-by /morning` (`references/decision-schema.md`): the proposal's content for what and why, its cited source as an input, the user's Actor ID as `--decided-by`. Append the returned `pointer_line` to the affected node's `## Knowledge` section. First show what will be recorded and confirm it is what was decided. Never batch a decision.
 
-  Proposed:
-  > <verbatim proposed content>
+Check every knowledge-entry accept for a conflict with an existing entry. If there is one: "This contradicts the existing entry '<...>'. Supersede the old / Keep both / Skip the new?" Default: keep both. Never supersede silently.
 
-  (a)ccept / (r)eject / (e)dit / (d)efer / (s)kip-remaining
-```
+**reject** — append `<today> proposal:<type>@<node> "<signal>" — rejected from /listen draft <date>` to `<config-root>/memory/staged/skip-logs/research.md`.
 
-The `Check` line is the draft's `Verification` result (`references/verification.md`). Show it exactly as recorded; if the proposal has no `Verification` field, show `Check: not run`. For a `fail` or `unverifiable` proposal, say so in one plain sentence before the choices (for example: "The overnight check could not find this in the cited source: the transcript says Friday, not Wednesday."). The check is evidence, not a decision: every proposal still gets the same choices, and nothing is accepted or rejected on the user's behalf because of it.
+**edit** — show the proposed content as editable text; apply the edited version on confirmation.
 
-When a proposal is accepted, do not copy the five verification fields into the node. They stay in the draft.
+**defer** — leave the proposal in the draft.
+
+**skip-remaining** — stop; the remaining proposals stay in the draft for the next session.
 
 ### 2c — Verified overnight (one review for the batch)
 
-Show the `batch` group once, as a numbered list, one line each:
+Show the `batch` group once, as a numbered list:
 
-```
-Verified overnight — <B> updates, each checked against its source, none conflicting:
+Use the **Verified batch** block from `references/morning-formats.md`: one line per proposal (node, type, one-line summary) with its evidence line beneath (source, locator, quote), then "Accept all <B>? (y / drop <numbers> / open <number> / one-by-one / later)".
 
-  1. <node-path> — <type>: <one-line summary of the proposed content>
-       evidence: <source> (<locator>) — "<quote>"
-  2. ...
-
-Accept all <B>? (y / drop <numbers> / open <number> / one-by-one / later)
-```
-
-- `y` → apply every listed proposal exactly as `accept` below does, then report how many were written and to which nodes.
-- `drop 2 5` → remove those from the batch and ask what to do with each (reject or defer); apply the rest.
-- `open 3` → show proposal 3 in full with the normal one-at-a-time choices, then return to the list.
-- `one-by-one` → walk the whole group individually.
-- `later` → leave the whole group in the draft.
+- `y` → apply every listed proposal exactly as `accept` does, then report how many were written and to which nodes.
+- `drop 2 5` → remove those and ask what to do with each (reject or defer); apply the rest.
+- `open 3` → show proposal 3 in full with the 2b choices, then return to the list.
+- `one-by-one` → walk the whole group individually. `later` → leave the group in the draft.
 
 Rules for the batch:
 
-- Always show the list. Never apply the batch without showing it, and never treat a previous morning's "y" as covering today's.
-- Show the evidence line for every item. If an item has no recorded evidence, it does not belong in the batch: move it to 2b.
-- If the conflict check at write time (see `accept`) finds a conflict the draft did not list, stop on that item, take it out of the batch, and handle it one at a time. Continue with the rest.
-- Nothing in the batch may touch anything outside memory. A proposal that would is not medium risk: move it to 2b.
-
-### `accept`
-- Apply the proposal to the target node per its `Type`:
-  - **Knowledge entry** → append to the appropriate `## Knowledge → ### Insights / Models / Gotchas / Lessons / Recipes / Corrections` section with `[confirmed:today] [recalled:today] [by:<actor-id>]`, where actor ID comes from the active private identity.
-  - **Person-update** → append to `## Recent interactions` or `## Notes` on the person page; create page if needed (graduate the contact per v4.2 rules).
-  - **Commitment** → append to `## Open threads` (for ones the user owes) or `## Waiting on` (for ones others owe the user).
-  - **Thread-update** → modify the named open thread (status change, append note, or close).
-  - **Decision** (v4.38+) → write a decision record with `python3 scripts/cortex_cli.py record-decision ... --recorded-by /morning` (`references/decision-schema.md`), using the proposal's content for what and why, its cited source as an input, and the user's Actor ID as `--decided-by`. Then append the returned `pointer_line` to the affected node's `## Knowledge` section. A decision is always reviewed one at a time: before writing, show what will be recorded and confirm it is what was decided, because the overnight run found it in a transcript and the user is the one deciding. Never batch a decision.
-- Append a `## Changelog` entry to the node: `[YYYY-MM-DD] /morning merge: <one-line summary> — proposed by <agent>`.
-- Check for conflicts via the v4.4 concept-drift detector. If the proposal conflicts with an existing entry, prompt: "This contradicts the existing entry '<...>'. Supersede the old / Keep both / Skip the new?" Default: keep both.
-
-### `reject`
-- Append to `<config-root>/memory/staged/skip-logs/research.md` (or a new `staged/skip-logs/morning-reject.md` if we want to keep these separate): `<today> proposal:<type>@<node> "<signal>" — rejected from /listen draft <date>`.
-- Move on.
-
-### `edit`
-- Render the proposed content as editable text. User types in changes. Apply the edited version on confirmation.
-
-### `defer`
-- Leave the proposal in the draft. Move on.
-
-### `skip-remaining`
-- Stop walking. Remaining proposals stay in the draft for the next session.
-
----
+- Always show the list first. A previous morning's "y" never covers today's.
+- Every item shows its evidence line. An item with no recorded evidence moves to 2b.
+- If the write-time conflict check finds a conflict the draft did not list, take that item out of the batch and handle it one at a time. Continue with the rest.
+- A proposal that would touch anything outside memory is not medium risk: move it to 2b.
 
 ## Step 2.9 — Record how the overnight check did
 
-After the review, append one line of counts (no proposal text, no names) so the verifier's accuracy can be judged over time (`references/verification.md`, "Measuring it"):
+Append one line of counts (no proposal text, no names) so the verifier's accuracy can be judged over time:
 
 ```
 python3 scripts/cortex_cli.py append-line --memory-root <config-root>/memory staged/verifier-outcomes.md "<today> by=<actor-id> draft=<date> pass:accepted=<n> pass:edited=<n> pass:rejected=<n> fail:rejected=<n> fail:accepted=<n> unverifiable:accepted=<n> unverifiable:rejected=<n> notrun=<n> deferred=<n>"
 ```
 
-`by` is the Actor ID from the active identity, the person who made these decisions. Count each proposal once, by its recorded verification and what the user did. `pass:edited` and `pass:rejected` are the cases where the check was too lenient; `fail:accepted` is where it was too strict. Skip this step if nothing was reviewed. A failure to write the line is reported in Step 5 and does not undo the merges.
+Count each proposal once, by its recorded verification and what the user did. Skip if nothing was reviewed. Report a failed write in Step 5; it does not undo the merges.
 
----
+## Step 2.95 — Needs a nudge
 
-## Step 2.95 — Needs a nudge (v4.37+)
+Items growth's daily `/nudges` check staged: a quiet deal, an email with no reply, a follow-up the user owes. Skip silently if `open-nudges` returned nothing.
 
-Things that went quiet, found by growth's daily `/nudges` check: an open deal with no activity, an email that got no reply, a follow-up the user said they would send. Each comes with a drafted message. Skip this step silently if `open-nudges` returned nothing.
+Use the list from `open-nudges`; do not decide yourself which items are open. Read each item's block, including its draft, from the day file it names under `<config-root>/memory/staged/nudges/`. Show them one at a time, longest quiet first within each trigger, at most 10; say how many remain for tomorrow. Use the **Nudge** block from `references/morning-formats.md`, with the choices `(u)se it / (e)dit / s(n)ooze / (d)ismiss / (l)ater`.
 
-Use the list from `open-nudges`. Do not decide for yourself which items are open. Read each item's full block, including its draft, from the day file it names under `<config-root>/memory/staged/nudges/`.
-
-Show them one at a time, oldest quiet first within each trigger, at most 10. If there are more, say how many remain and that they will be here tomorrow.
-
-```
-[Nudge N of M] <subject> — <quiet deal | no reply | you owe this>
-  Quiet since <date> (<days quiet>)
-  Source: <source>
-
-  Draft:
-  > <the drafted message, or "none — <why>">
-
-  (u)se it / (e)dit / s(n)ooze / (d)ismiss / (l)ater
-```
-
-- **use** → show the draft ready to copy and send. This command does not send. If the user asks you to send it, that is a high-risk action: show the exact message and recipient and get approval for that one message immediately before sending, through whatever mail tool the session has. Then record `acted`.
-- **edit** → take the user's changes, show the result, then treat it as `use`.
+- **use** → show the draft ready to copy and send. This command does not send. If the user asks you to send it, that is high risk: show the exact message and recipient and get approval for that one message immediately before sending. Record `acted`.
+- **edit** → apply the user's changes, show the result, then treat it as `use`.
 - **snooze** → ask until when; default is the trigger's threshold from today (15 days for a quiet deal). Record `snoozed` with `until`.
-- **dismiss** → never raise this item again. Say so before recording it: "I won't flag this one again." Record `dismissed`.
-- **later** → record nothing. It will be shown again tomorrow.
+- **dismiss** → say "I won't flag this one again," then record `dismissed`.
+- **later** → record nothing; it returns tomorrow.
 
-Record each decision as one ledger line:
+Record each decision as one ledger line, copying the item's `Key` exactly:
 
 ```
-python3 scripts/cortex_cli.py append-line --memory-root <config-root>/memory staged/nudges/ledger.jsonl '{"ts": "<ISO-8601 now>", "key": "<the item's Key>", "event": "acted | snoozed | dismissed", "until": "<YYYY-MM-DD, snooze only>", "by": "<actor-id>"}'
+python3 scripts/cortex_cli.py append-line --memory-root <config-root>/memory staged/nudges/ledger.jsonl '{"ts": "<ISO-8601 now>", "key": "<Key>", "event": "acted | snoozed | dismissed", "until": "<YYYY-MM-DD, snooze only>", "by": "<actor-id>"}'
 ```
 
-Rules:
+**Never change a deal.** Do not propose closing a deal or changing its stage because it is quiet. If the user says the deal is dead, `dismiss` the nudge; any CRM change they then ask for is a separate high-risk action. A nudge is not a memory proposal: nothing here is merged into a node.
 
-- **Never change a deal.** Do not propose closing a deal or changing its stage because it is quiet. If the user says the deal is dead, that is their decision: `dismiss` the nudge, and treat any CRM change they then ask for as a separate high-risk action.
-- **A nudge is not a memory proposal.** Nothing here is merged into a node. If acting on a nudge produces something worth remembering, the user can capture it with `/remember`.
-- **Keys come from the file.** Copy the `Key` exactly; never construct one.
-- After the walk, run `open-nudges` again. For each file it lists as `archivable`, move it with `python3 scripts/cortex_cli.py move-node --memory-root <config-root>/memory staged/nudges/<date>.md staged/nudges/archive/<date>.md`.
-
----
+Afterwards run `open-nudges` again and move each `archivable` file with `cortex_cli.py move-node --memory-root <config-root>/memory staged/nudges/<date>.md staged/nudges/archive/<date>.md`.
 
 ## Step 3 — Finalize the draft
 
-After walking:
+- All proposals accepted, rejected, or archived → move the draft to `staged/commit-drafts/archive/<date>-merged.md`.
+- Any deferred → leave the draft in place with the handled proposals struck out (`~~...~~`), so the next `/morning` picks up where this one stopped.
 
-- If all proposals were accepted / rejected / archived: move the draft to `staged/commit-drafts/archive/<date>-merged.md`.
-- If any proposals remain in defer state: leave the draft in place, with merged / rejected sections marked `~~struck out~~` so the next session skips them. Subsequent `/morning` runs on the same draft pick up where you left off.
+## Step 4 — Refresh, log, reflect, commit
 
----
+1. **Refresh**, always: `python3 scripts/cortex_cli.py reindex --memory-root <config-root>/memory`, then `python3 scripts/cortex_cli.py refresh-hot --memory-root <config-root>/memory --trigger morning`.
+2. **Log**: invoke the `log-writer` skill with `op_name: morning` and `summary: merged <a> / <total> proposals from <draft-date> draft. <r> rejected, <d> deferred. hot.md + memory/index.md refreshed.`
+3. **Reflect and seed today's brief** (skip if `briefing` is not installed):
+   - If `<config-root>/briefs/<yesterday_local>.md` has a `## Reflection` section that `/listen` wrote from the brief, show it and ask "edit it, or keep it as-is?" Keep → go to priorities. Edit → ask the three questions pre-filled.
+   - Otherwise ask, one at a time, pre-filled from the merged draft where it helps: **"Biggest thing that got done yesterday?"**, **"What blocked you, if anything?"** (optional), **"What's the one thing today has to move?"** Accept "nothing major".
+   - Write the answers to `<config-root>/briefs/<today_local>.md` as a `## Reflection` section (the **Reflection** block in `references/morning-formats.md`), replacing one already there for today.
+   - Propose **today's priority tasks and outreach**, each `(k)eep / (e)dit / (d)rop`, with one batch shortcut when items plainly carry over. Candidates: the "one thing" answer, surviving P0/P1 next actions, and growth's tier for today plus deferred contacts. Never propose an item suppressed in `surfacing-prefs.md`. Write the accepted set to `<config-root>/briefs/<today_local>.seed.json` as `{priorities:[...], outreach:[...]}`.
+   - Ask once: **"Anything else for today?"** Append any answer to the seed file.
+4. **Friday rehearsal**: on a Friday, if `<config-root>/memory/staged/queues/rehearse.md` has candidates, run `/rehearse --batch 5` and report `Rehearsal: <N> entries reviewed`.
+5. **Commit memory**: skip if `<config-root>/memory/.git/` does not exist. Otherwise acquire the write lock (`scripts/cortex_cli.py lock-acquire`), `git add . && git commit` any dirty state, release the lock. Push only if `cortex.user-context.md` has `memory_as_git.remote` set and `memory_as_git.push_on_close: true`: `git push <memory_as_git.remote_name, default "origin"> main`. On failure, log it and continue. Report `Memory: committed · pushed to <remote_name>` or `Memory: committed (local-only)`.
 
-## Step 4 — Refresh hot.md and memory index
+## Step 5 — Report and offer the brief
 
-After any node writes:
+Show the **Closing report** block from `references/morning-formats.md` (counts, refreshes, reflection, plus the rehearsal and memory lines when they apply), ending "Run /brief to start the day with today's working surface? (y/N)".
 
-1. `python3 scripts/cortex_cli.py reindex --memory-root <config-root>/memory` — regenerates `memory/index.md`. Quick — no model calls.
-2. `python3 scripts/cortex_cli.py refresh-hot --memory-root <config-root>/memory --trigger morning` — regenerates `memory/hot.md` per `references/hot-cache.md`. Also quick.
+`y` → invoke `/brief` for today. `n` → exit.
 
-Both happen unconditionally so the morning ends with fresh substrate.
+## What this command does not do
 
----
-
-## Step 4.5 — Log to chronicle (v4.7.1+, centralized in v4.7.2+)
-
-Invoke the `log-writer` skill (see `skills/log-writer/SKILL.md`) with:
-- **op_name:** `morning`
-- **summary:** `merged <a> / <total> proposals from <draft-date> draft. <r> rejected, <d> deferred. hot.md + memory/index.md refreshed.`
-
----
-
-## Step 4.6 — Reflect on yesterday, seed today's brief (v4.16+)
-
-_Ported from `/end-day` Steps 4.1/4.5/4.6 as part of the Nucleus Operating Model Refactor — `/end-day` is now optional, so this is the one required daily touch that keeps tomorrow's (today's) brief deliberately curated rather than purely auto-mined. Skip this step entirely if `briefing` isn't installed._
-
-### Step 4.6.0 — Check for an artifact-authored reflection first (v4.27+)
-
-Before asking anything, check whether `/listen` Step 1.5g already wrote (or found) a `## Reflection` section in `<config-root>/briefs/<yesterday_local>.md` for yesterday's date — this happens whenever the user filled in "Today's Reflection" directly in the brief artifact.
-
-- **Found, written by `/listen`** → show it: "You filled in yesterday's reflection in the brief. Here's what you wrote: [biggest / blocked / one thing]. Want to edit it, or keep it as-is?" On "keep" → skip straight to the priorities/outreach proposal below (no re-asking). On "edit" → walk the three questions below, pre-filled with the existing answers, and overwrite on confirm.
-- **Not found** → proceed to ask cold, per below.
-
-Ask three questions conversationally, one at a time, pre-filled from candidates in the just-merged draft where available (accepted DECISION/INSIGHT entries → "biggest thing done"; GOTCHA entries or rejected/deferred items tagged blocked → "what blocked you"; any surviving P0 next-action or a proposal explicitly flagged urgent → "one thing today has to move"). If no draft was merged this run (e.g. `/morning` found nothing to walk), ask cold with no pre-fill.
-
-1. **"Biggest thing that got done yesterday?"**
-2. **"What blocked you, if anything?"** (optional — skip on silence)
-3. **"What's the one thing today has to move?"**
-
-If the user says "nothing major," accept that and continue — don't press.
-
-Write the answers to `<config-root>/briefs/<today_local>.md` under a `## Reflection` section (same format `/end-day` used to write, since tomorrow's `/brief` Section 5 reads it verbatim):
-
-```markdown
-## Reflection
-
-- **Biggest thing that got done yesterday:** <answer or "—">
-- **What blocked you:** <answer or "—">
-- **The one thing today has to move:** <answer or "—">
-- _Captured by /morning at <HH:MM>._
-```
-
-Idempotent: replace an existing `## Reflection` section from today rather than duplicating.
-
-Then propose **today's priority tasks and outreach**, walked individually (`(k)eep / (e)dit / (d)rop`, with a batch shortcut when items obviously carry over unchanged). Candidates: the "one thing today has to move" answer, any surviving P0/P1 next-actions from cortex nodes, and the growth pipeline tier for today plus any `nudge`/deferred contacts. Respect `surfacing-prefs.md` — never propose a suppressed item. If there's nothing material, say so and move on.
-
-Write the accepted set to `<config-root>/briefs/<today_local>.seed.json` as `{priorities:[...], outreach:[...]}` — `/brief` reads this file if present and seeds sections 3 (Priority Tasks) & 4 (Outreach Queue) from it before merging live pulls.
-
-Finally, ask once: **"Anything else for today?"** — free-form capture, appended to the same seed file. Silence/"no" continues.
-
----
-
-## Step 4.65 — Friday rehearsal batch (v4.18.4+)
-
-If `today_local` is a Friday, run a small `/rehearse` batch (`rehearse_batch_size: 5`, i.e. `/rehearse --batch 5`) here instead of relying on `/end-week` Step 5.5 as the only place this happens. `/end-week` is a separate, optional Friday ritual most users don't run every week; folding a small batch into `/morning` — the required daily touch — means the active-retention loop actually runs weekly instead of whenever someone remembers to run `/end-week`.
-
-- Skip silently on any other day.
-- Skip silently if `<config-root>/memory/staged/queues/rehearse.md` has no candidates.
-- If the user still runs `/end-week` the same week, its own Step 5.5 `/rehearse` call is idempotent against this — whatever this step already handled won't re-surface (handled entries are removed from the queue per `/rehearse` Step 5).
-- Note the count in Step 5's report: `Rehearsal: <N> entries reviewed` (omit the line if it's not Friday or nothing was queued).
-
----
-
-## Step 4.7 — Memory-as-git commit + push (v4.18.3+)
-
-Since `/end-day` is optional (v4.16+) and `/morning` is the required daily touch, the daily commit-and-push that used to live only in `/end-day` Step 5.8 runs here too — otherwise a user who only runs `/morning` never gets their memory committed or pushed at all.
-
-Same logic as `/end-day` Step 5.8, condensed:
-
-1. Skip entirely if `<config-root>/memory/.git/` doesn't exist (memory-as-git not enabled).
-2. Acquire the write-lock (`scripts/cortex_cli.py lock-acquire`), commit any dirty state (`git add . && git commit`), release the lock. Empty commits are a no-op — safe to run even if `/end-day` already committed today.
-3. **Optional push:** if `cortex.user-context.md` has `memory_as_git.remote: <url>` and `memory_as_git.push_on_close: true`, run `git push <memory_as_git.remote_name, default "origin"> main`. Default (no remote configured): local-only, no push.
-4. Failure mode: log the error, don't block the rest of `/morning` — this is a maintenance step, not the point of the command.
-
-Note in Step 5's report if a commit/push happened: `Memory: committed · pushed to <remote_name>` or `Memory: committed (local-only)`.
-
----
-
-## Step 5 — Report and offer brief handoff
-
-```
-Morning merge complete.
-
-  Accepted: <a> proposals → <k> nodes updated, <p> changelog entries written
-  Rejected: <r> proposals → reject-log updated
-  Deferred: <d> proposals → still in draft
-
-  hot.md: refreshed (<w> words)
-  memory/index.md: refreshed (<n> nodes catalogued)
-  Reflection: captured · Today's priorities/outreach: <c> seeded to briefs/<today>.seed.json
-
-Run /brief to start the day with today's working surface? (y/N)
-```
-
-- `y` → invoke `/brief` for today.
-- `n` → exit.
-
----
-
-## Behavior rules
-
-- **No silent merges.** Every proposal accepted is explicitly confirmed by the user.
-- **Conflict-aware.** Run v4.4 drift detection on every knowledge-entry accept. Surface contradictions; never silently supersede.
-- **Idempotent.** Re-running `/morning` on a partially-walked draft picks up where the last session stopped.
-- **Skim mode is real.** Users who don't want to one-by-one walk should still be able to glance the proposals and accept-all-high-confidence. Skim mode renders one-line summaries and offers `accept-all-high`, `accept-all`, `select`, `reject-all` shortcuts.
-- **Privacy-aware.** The draft cites the archive (`archive/<date>/<file>`). Don't surface raw archive content unless the user asks to expand a proposal's source quote.
-
----
-
-## When this is NOT the right command
-
-- **No `/listen` draft exists.** This command exits gracefully; you don't need to run `/listen` interactively to use cortex.
-- **Mid-day captures.** Use `/remember`.
-- **Memory health audits.** Use `/cleanup`.
-- **Web research for gaps.** Use `/research-gaps`.
-- **A deeper end-of-day close** (transcript/inbox/Slack mining, HubSpot catch-all logging). `/end-day` is optional now but still available for that.
-
----
-
-## What this command does NOT do
-
-- Does not invoke `/listen` (the draft must already exist).
-- Does not run `/nudges`, send a nudge's draft without approval for that message, or change a deal.
-- Does not modify the archive — `archive/` is immutable.
-- Does not auto-accept high-confidence proposals (even in skim mode, the user types `accept-all-high` explicitly).
-- Does not accept the verified batch without showing it and getting a yes, and never batches a proposal that failed, could not be verified, was not checked, or conflicts with an existing fact.
-- Does not call WebSearch / WebFetch. The mining already happened overnight.
-- Does not run `/brief` without user confirmation.
+- Invoke `/listen` or `/nudges`; the draft and the nudges must already exist.
+- Accept the verified batch without showing it and getting a yes, or batch a proposal that failed, could not be verified, was not checked, or conflicts with an existing fact.
+- Send a nudge's draft without approval for that message, or change a deal.
+- Modify `archive/`, call WebSearch or WebFetch, or run `/brief` without the user's yes.

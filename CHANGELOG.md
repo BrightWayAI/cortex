@@ -4,6 +4,19 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.39.0] — /morning trimmed; memory-diff (2026-11-16)
+
+### Changed
+- `/morning` is 2,500 words, down from 4,422, with the same steps. Version-history prose is gone, the five display layouts moved to `references/morning-formats.md` (read when a block is shown), and the memory-diff safety checks moved into a script.
+- `cortex_cli.py memory-diff --config-root <root>`: read-only. It reports whether memory is under git, whether a diff is safe right now (dirty tree, `/listen` still running, no prior commit, no overnight commit), and what changed by directory, with counts and node names and no content. `/morning` Step 0.5 acts on its `status` instead of running the git checks by hand.
+- The read-only helper scripts (`memory-diff`, `triage-draft`, `open-nudges`) have a stated fallback: on a host that cannot run them, `/morning` does the same reading by hand and says so. Only the config-root guard stops the run.
+
+### Behavior tightened
+- Skim mode's `accept-all` and `accept-all-high` shortcuts now apply only to the verified batch. The old text offered them for every proposal, which contradicted the rule that failed, unverified, and conflicting proposals are decided one at a time.
+
+### Added
+- 10 unit tests for `memory-diff`.
+
 ## [4.38.1] — Eval fixture and quality tests (2026-11-16)
 
 ### Added
