@@ -97,7 +97,7 @@ Default policy (configurable via `<config-root>/plugins/cortex.user-context.md`)
 - **31-180 days:** compress per-day directory to `archive/YYYY-MM.tar.gz` (one monthly tarball).
 - **>180 days:** archive retention is user-driven. `/listen --retention prune` walks old tarballs and offers per-month delete confirmation. No silent deletion.
 
-Compression and pruning happen in `/listen`'s tail (Step 7 below).
+Compression happens weekly in `/listen` Step 5.
 
 ## Re-mining
 

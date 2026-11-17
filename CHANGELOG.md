@@ -4,6 +4,23 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.40.0] — /listen trimmed; listen-start and listen-finish (2026-11-16)
+
+### Changed
+- `/listen` is 2,411 words, down from 5,226, with the same steps.
+  - Start-up (reachability probe, `.gitignore` privacy defaults, in-progress marker, write lock) and shut-down are now `cortex_cli.py listen-start` and `listen-finish`. The command acts on an exit code instead of following shell pseudo-code.
+  - The brief-mining procedure (Step 1.5a to 1.5i) moved, unchanged, to `references/listen-brief-mining.md`, which Step 1.5 reads in full. The run receipt is its own step, 1.6.
+  - Version-history prose and the scheduling examples are gone; scheduling points to ops `/register-schedules`.
+
+### Fixed
+- The in-progress marker was written with `date -Iseconds -d '+30 min'`, which is GNU-only and fails on macOS. `listen-start` computes it.
+- Shut-down removes only the marker and lock that this run created, identified by a token `listen-start` returns. A run that found another `/listen` in progress, or the lock busy, no longer has any path to removing the other run's marker or lock.
+- If the brief-mining reference cannot be read, the run records that brief mining was skipped and marks the receipt `partial`; it does not improvise the procedure.
+
+### Added
+- 15 unit tests for the lifecycle script; eval `listen-startup-outcomes`.
+- Eval fixture: the transcript now sits under `archive/<date>/transcripts/`, where `/listen` reads transcripts from.
+
 ## [4.39.0] — /morning trimmed; memory-diff (2026-11-16)
 
 ### Changed
