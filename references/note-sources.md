@@ -37,11 +37,11 @@ Example:
     method: gmail-search
     query: "from:meet-noreply@google.com OR subject:'Notes by Gemini'"
 
-- id: riptoes-fireflies
+- id: acme-fireflies
   provider: fireflies
-  label: "Fireflies for Riptoes calls only"
+  label: "Fireflies for Acme calls only"
   enabled: true
-  scope: project:riptoes
+  scope: project:acme
   config: {}
 ```
 

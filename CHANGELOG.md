@@ -4,6 +4,16 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.42.1] — Remove real client and contact names (2026-11-17)
+
+Privacy fix. Examples, an eval prompt, a test fixture and older changelog
+entries still named real clients, prospects and contacts. All replaced with
+fictional names. No functional change.
+
+### Fixed
+- Real client, prospect and contact names removed from command examples,
+  reference templates, evals, tests and earlier changelog entries.
+
 ## [4.42.0] — /cleanup trimmed (2026-11-16)
 
 ### Changed
@@ -604,15 +614,13 @@ hardcoded as an "example" in command docs ships to every Nucleus user.
 
 ### Fixed
 - `references/node-taxonomy.md`, `commands/sync-linked-entities.md` — example
-  slugs/entities (`client/holt-riptoes`, `person/rob-buelow`,
-  `bizdev:vector-solutions`, `bizdev/jacquie-moen`) replaced with fictional
+  slugs/entities that named real clients and contacts replaced with fictional
   placeholders (`client/aurora-labs`, `person/alex-rivera`,
   `bizdev:nova-solutions`, `bizdev/morgan-reyes`).
 - `commands/start-nucleus.md` — example onboarding checklist no longer
   hardcodes "Zach Wagner, BrightWay AI"; uses "Jane Doe, Acme Consulting."
 - `commands/end-day.md` — example HubSpot batch-write table no longer names
-  real deals/contacts ("Barker & Scott," "Common Cause," "Javier (Globant),"
-  "Gaggle diagnostic") — replaced with fictional equivalents.
+  real deals/contacts — replaced with fictional equivalents.
 
 ## [4.17.0] — /recall load boundary + cap enforcement (2026-09-15)
 
@@ -1112,7 +1120,7 @@ Patch to v4.10.0. Real-user dogfooding showed three remaining issues after the i
 
 1. **DASHBOARD.md had zero outbound wikilinks** even though it's the conceptual central hub. Pre-v4.10.1 dashboards used `### node-id` section headers (markdown), not `[[node-id]]` wikilinks. In Obsidian's graph view, DASHBOARD appeared as an isolated island while every active node radiated from somewhere else.
 
-2. **First-name-only references missed by relink.** Files mentioning "Erica Hruby" once and "Erica" three more times had only the full-name match converted. Subsequent bare-first-name occurrences stayed as plain text.
+2. **First-name-only references missed by relink.** Files mentioning "Maria Santos" once and "Maria" three more times had only the full-name match converted. Subsequent bare-first-name occurrences stayed as plain text.
 
 3. **Person pages didn't cross-link to other persons.** Graduated pages linked to clients and brightway-profile but not to colleagues mentioned in the same source contexts. Result: graph looked like spoke-clusters around each client, not a network fabric between people.
 
@@ -1123,12 +1131,12 @@ Patch to v4.10.0. Real-user dogfooding showed three remaining issues after the i
 
 ### Fixed — first-name expansion in relink heuristic
 
-- `commands/relink-memory.md` Step 3 updated. After matching a full-name occurrence ("Erica Hruby") in a file, scan the same file for bare first-name occurrences ("Erica") and wikilink them. Constraints: first name must be unambiguous in this file (no two persons share it), word-boundary regex required, minimum 3-character match, contextually consistent.
+- `commands/relink-memory.md` Step 3 updated. After matching a full-name occurrence ("Maria Santos") in a file, scan the same file for bare first-name occurrences ("Maria") and wikilink them. Constraints: first name must be unambiguous in this file (no two persons share it), word-boundary regex required, minimum 3-character match, contextually consistent.
 
 ### Fixed — person-to-person cross-linking
 
 - `commands/relink-memory.md` Step 7 updated. During person-page synthesis, scan source nodes for OTHER persons mentioned in the same contexts (PEOPLE blocks, Recent Interactions, Open Threads, Changelog lines). For each other person with an existing page, add to `## Linked entities` under `Other people: [[person/<slug>]]`. Limit 10 cross-links per page.
-- Reciprocal back-linking: when adding "Mary Kate" to Erica's Linked Entities, also add "Erica" to Mary Kate's Linked Entities. Avoids one-way edges. Idempotent.
+- Reciprocal back-linking: when adding "Mary Kate" to Erica's Linked Entities, also add "Maria" to Mary Kate's Linked Entities. Avoids one-way edges. Idempotent.
 - New cross-linking pass on `/relink-memory --rerun` — back-fills person-to-person edges on existing person pages that were graduated before v4.10.1.
 
 ### How to apply
