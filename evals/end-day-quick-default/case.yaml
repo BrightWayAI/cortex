@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: end-day-quick-default
+context:
+  scaffold_script: seed.sh

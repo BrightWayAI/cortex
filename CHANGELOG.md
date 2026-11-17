@@ -4,6 +4,12 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.40.1] — Baseline evals for the long commands (2026-11-16)
+
+### Added
+- Eight baseline evals for the four long commands that had little or no coverage, written before any of them is shortened: `remember-quick-note`, `remember-silent-contradiction`, `recall-auto-start`, `recall-node-quality`, `cleanup-audit-before-action`, `cleanup-skip-reason-enum`, `end-day-quick-default`, `end-day-lock-held`. Each passes 3 of 3 against the current command text. No command changed.
+- `evals/README.md`: `/end-day` is `disable-model-invocation`, so its cases invoke `/cortex:end-day` directly in the prompt rather than asking the model to load it.
+
 ## [4.40.0] — /listen trimmed; listen-start and listen-finish (2026-11-16)
 
 ### Changed
