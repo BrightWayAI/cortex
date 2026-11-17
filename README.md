@@ -1,7 +1,7 @@
-# Cortex v4.15 — One Second Brain Across AI Hosts
+# Cortex — One Second Brain Across AI Hosts
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![CI](https://github.com/BrightWayAI/claude-cortex/actions/workflows/validate.yml/badge.svg)](https://github.com/BrightWayAI/claude-cortex/actions/workflows/validate.yml)
+[![CI](https://github.com/BrightWayAI/cortex/actions/workflows/validate.yml/badge.svg)](https://github.com/BrightWayAI/cortex/actions/workflows/validate.yml)
 
 **Give Claude, ChatGPT Work, and Codex one shared second brain.**
 
@@ -13,6 +13,22 @@ auto-commit behavior is best-effort.
 Works on **Cowork** (Claude Desktop), **Claude Code**, **ChatGPT Work**, and
 **Codex**. Local surfaces use the user-owned Markdown directly; cloud Work
 reaches it through a private MCP tunnel.
+
+---
+
+## The nightly loop
+
+Cortex does most of its learning while you are away, and nothing it learns reaches memory until you have seen it.
+
+| When | What happens |
+|------|--------------|
+| **Overnight** — `/listen` | Reads yesterday's calendar, mail, Slack, meeting notes, Drive activity and yesterday's brief into a dated archive. Optionally reads what changed that day in your CRM, finance tool and Airtable (`references/listen-business-sources.md`). Mines the archive for commitments and learnings and stages them as proposals. |
+| **Before you see it** — `verifier` | A separate agent on a different model checks every proposal against the source it cites and marks it pass, fail or unverifiable, with the quoted evidence. |
+| **Morning** — `/morning` | Shows the proposals: verified ones together, the rest one at a time. You accept, reject, edit or defer. Accepted items are written to memory, decisions are saved as their own records, and the day's priorities are set. |
+| **Any time** — `/remember`, `/note`, `/learn` | Save something from the current conversation on the spot. |
+| **Optional** — `/end-day`, `/end-week` | A deeper same-day pass and the Friday close. Nothing depends on them. |
+
+The nightly run is scheduled with Ops's `/register-schedules` and by default runs in the cloud with no computer attached. One autonomy policy (`references/autonomy-policy.md`) decides what may happen without asking: reading is free, memory changes are reviewed in a batch, CRM writes are approved one at a time, and nothing is ever sent for you. Unattended memory merges are off.
 
 ---
 
@@ -119,8 +135,8 @@ tunnel setup, tool list, and public-deployment requirements.
 Prerequisites: ChatGPT desktop, `git`, `uv`, and Codex CLI.
 
 ```bash
-git clone https://github.com/BrightWayAI/claude-cortex.git
-cd claude-cortex
+git clone https://github.com/BrightWayAI/cortex.git
+cd cortex
 codex plugin marketplace add "$PWD"
 codex plugin add cortex@cortex-local
 ```
@@ -215,7 +231,7 @@ This is what makes Claude feel like it "knows" you. It carries across all projec
 
 ## Explicit Commands
 
-All commands from v3 still work. v4 added subagent invocation; v4.2 adds shared-config commands and closing rituals.
+Every command also has a matching skill, so plain language works too (see Auto-firing Skills below).
 
 ### Memory commands
 
@@ -229,7 +245,31 @@ All commands from v3 still work. v4 added subagent invocation; v4.2 adds shared-
 | `/search [query]` | Cross-project search (delegates to `memory-librarian` for broad queries) |
 | `/forget [node]` | Archive a project |
 | `/cleanup` | Memory health audit |
+| `/rehearse` | Shows 3–5 aging knowledge entries and asks whether each is still true: confirm, update, demote, archive or skip |
+| `/reindex` | Rebuilds `memory/index.md`, the catalog of every node. Deterministic, no model call |
+| `/research-gaps` | Finds thin, stale or contradictory memory and researches fills on the web (two sources per claim) into a draft |
+| `/merge-research-draft` | Walks that draft one finding at a time: accept, reject, defer or edit |
+| `/start-workstream` | Creates a workstream node for an initiative that spans several projects and people |
+| `/sync-linked-entities` | After a node changes, checks the nodes linked to it for drift and proposes updates |
+| `/relink-memory` | One-time pass that proposes `[[wikilinks]]` for plain-text mentions of known people, clients and topics |
+
+### Nightly and morning
+
+| Command | What it does |
+|---------|-------------|
+| `/listen` | The nightly ingest described above. Writes only to the archive and to a staged draft; never to active memory |
+| `/morning` | Review and apply the staged draft, capture a short reflection, set today's priorities, optionally open the brief |
+
+### Setup and migrations
+
+| Command | What it does |
+|---------|-------------|
+| `/start-nucleus` | The 15-minute foundation: memory location, identity, voice, autonomy policy, note sources, starter-plugin check |
+| `/setup-sources` | Chooses which notetakers and note folders the nightly run mines (Granola, Gemini, Fireflies, Otter, Notion, Drive, Gmail labels) |
+| `/setup-obsidian` | Optional: makes the config root an Obsidian vault for graph view and mobile reading |
 | `/migrate-plugin-configs` | One-time: archive legacy files in `<config-root>/plugins/` and create `plugins/ops/schedules.md`. Dry-run first; nothing is deleted |
+| `/migrate-scopes-v2` | One-time: moves personal files (identity, voice, profile, reflections) into the private `memory/me/` scope |
+| `/migrate-staged-substrates` | One-time: moves pre-4.8.1 staged dotfiles into `memory/staged/` |
 
 `/review` (weekly synthesis digest) and `/timeline` (chronological activity) moved to the `briefing` plugin (Today's Brief) on 2026-09-15, as part of consolidating every "what's going on" surface into one plugin.
 
@@ -251,8 +291,8 @@ command itself is owned and shipped by the Comms plugin.
 
 | Command | What it does |
 |---------|-------------|
-| `/end-day` | 5-min daily close — recap today, prompt for reflection, commit learnings to memory, optionally pre-stage tomorrow via `plan-tomorrow`. |
-| `/end-week` | 15-min Friday close — runs `note-taker` (mode: transcript) for uncaptured commitments, `/cleanup` for memory hygiene, briefing's `/review` for synthesis (skipped if briefing isn't installed), prompts for weekly reflection, optionally pre-stages Monday's outreach via `weekly-outreach`. |
+| `/end-day` | Optional end-of-day close. `/listen` and `/morning` already cover the overnight mining; run this for a deeper same-day pass. Mines today's brief and CRM activity, shows what it learned and what it would forget for your review, then commits. |
+| `/end-week` | 15-min Friday close — runs `note-taker` (mode: transcript) for uncaptured commitments, `/cleanup` for memory hygiene, briefing's `/review` for synthesis (skipped if briefing isn't installed), prompts for weekly reflection, optionally pre-stages Monday's growth brief. |
 
 ### Always-On Skill
 
@@ -277,6 +317,7 @@ Commands also fire from natural language:
 | "set up my voice", "update my writing voice" | Comms's `setup-voice` |
 | "wrapping up", "calling it a day", "end of day" | `end-day` |
 | "Friday wrap-up", "close out the week", "end of week" | `end-week` |
+| "good morning", "what did you learn overnight" | `morning` |
 
 ---
 
@@ -366,7 +407,12 @@ pointer chain. The same root is shared by Cowork, Claude Code, and Codex.
 ```
 <config-root>/memory/
 ├── DASHBOARD.md          ← Master index
-├── user.md               ← Your profile (NEW in v4)
+├── index.md              ← Catalog of every node (/reindex)
+├── hot.md                ← Rolling 7-day cache loaded at session start
+├── me/                   ← Private scope: identity, voice, profile, reflections
+├── staged/               ← Drafts awaiting your review (nightly proposals, research)
+├── decision/             ← One record per decision
+├── person/               ← Person pages
 ├── archive/              ← Archived nodes
 ├── client/
 │   ├── acme-corp.md
@@ -389,7 +435,8 @@ Every host resolves the same location in this order:
 2. `CORTEX_CONFIG_ROOT`
 3. `~/.cortex/config-root` — recommended persistent, cross-host pointer
 4. `~/Documents/.claude-plugin-config-root` — legacy Claude pointer
-5. `~/Documents/Claude` — backward-compatible default
+5. `~/cortex-root` — only when it was created by `cortex_cli.py bootstrap` (cloud sessions)
+6. `~/Documents/Claude` — backward-compatible default
 
 For most users, `~/.cortex/config-root` is the only configuration file needed.
 It contains one absolute path on one line. Prefer
@@ -426,7 +473,7 @@ Use kebab-case. Organize however fits your work:
 | Auto-commit | Best-effort skill | Best-effort instruction | Explicit `$remember` |
 | Passive adaptation | Skill | Instructions | Current-session skill behavior |
 | User profile | Shared | Shared | Shared |
-| Explicit workflows | 29 skills/commands | 9 slash adapters + skills | 29 `$skill` adapters |
+| Explicit workflows | 25 commands, each with a skill | 7 slash adapters + skills | 25 `$skill` adapters |
 | Memory files | Shared root | Shared root | Shared root |
 
 All three hosts can read and write the same memory files. Cross-host writes
@@ -437,6 +484,14 @@ coordinate through the same lock and atomic-write implementation.
 ## Changelog
 
 See `CHANGELOG.md` for the full version-by-version history (this section only tracks major milestones).
+
+### v4.31–v4.45 — Signal-driven, self-verifying
+- **Nightly loop in the cloud**: `/listen` runs with no computer attached and stages proposals; `/morning` is the only required ritual
+- **Independent verification**: the `verifier` agent checks every mined proposal against its source on a different model before you see it
+- **One autonomy policy**: versioned tiers decide what may happen without asking; CRM writes need approval for each item; nothing is sent for you
+- **Decision records**: each decision is its own record, superseded rather than overwritten
+- **Business sources**: optional read-only CRM, finance and Airtable changes in the nightly archive
+- **Shorter commands**: every command file is 2,500 words or fewer, with formats moved to `references/`
 
 ### v4.15.0 — ChatGPT Work and organization distribution
 - **One installable plugin**: 29 bundled workflows plus a bounded local MCP bridge

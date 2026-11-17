@@ -4,6 +4,11 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.45.1] — README refresh (2026-11-17)
+
+### Changed
+- README brought up to date: the nightly loop (`/listen`, the `verifier` check, `/morning`), the full command list, the current memory layout and config-root order, and the repository links. Documentation only; no behavior change.
+
 ## [4.45.0] — /listen business sources: CRM, finance, Airtable (2026-11-17)
 
 `/listen` can now archive three business sources each night: the CRM
