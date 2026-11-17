@@ -147,7 +147,7 @@ DASHBOARD has <N> potentially stale lines:
   - "Draft Sylvia outreach" <!-- by:/remember @ 2026-04-22 --> · 36 days old
 
   MISSING PROVENANCE (pre-v4.12 or unattributed):
-  - "WAITING:Caitlyn — Logo permission" (no by-tag)
+  - "WAITING:Priya — Logo permission" (no by-tag)
 
   ORPHANED REFERENCES:
   - "[[bizdev/foo-corp]]: ..." — node no longer exists

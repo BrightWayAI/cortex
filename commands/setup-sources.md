@@ -144,7 +144,7 @@ Final note-sources configuration:
   granola              global       enabled   ✓ healthy
   gemini-meet-drive    global       enabled   ✓ healthy
   gemini-meet-email    global       enabled   ✓ healthy  (will dedupe vs gemini-meet-drive)
-  riptoes-fireflies    project:riptoes  enabled   ✓ healthy
+  acme-fireflies    project:acme  enabled   ✓ healthy
 
 Save to <config-root>/plugins/cortex.note-sources.md? (y/n)
 ```
@@ -188,11 +188,11 @@ _Last updated: 2026-05-12_
     method: gmail-search
     query: "from:meet-noreply@google.com OR subject:'Notes by Gemini'"
 
-- id: riptoes-fireflies
+- id: acme-fireflies
   provider: fireflies
-  label: "Fireflies for Riptoes calls only"
+  label: "Fireflies for Acme calls only"
   enabled: true
-  scope: project:riptoes
+  scope: project:acme
   config: {}
 ```
 ```
@@ -209,7 +209,7 @@ _Last updated: 2026-05-12_
 
 ## Per-project source overrides
 
-For now, project-scoped sources (e.g., `scope: project:riptoes`) are configured through this command. A future cortex version (or the `project-setup` plugin) may add an inline "Does this engagement use a different notetaker than your defaults?" question during `/project-setup` — that will write a `scope: project:<new-node-id>` entry to this same file. For v4.3, run `/setup-sources` directly to add per-project sources.
+For now, project-scoped sources (e.g., `scope: project:acme`) are configured through this command. A future cortex version (or the `project-setup` plugin) may add an inline "Does this engagement use a different notetaker than your defaults?" question during `/project-setup` — that will write a `scope: project:<new-node-id>` entry to this same file. For v4.3, run `/setup-sources` directly to add per-project sources.
 
 ---
 

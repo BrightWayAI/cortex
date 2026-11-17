@@ -209,7 +209,7 @@ class CurrentNodeFormatTests(unittest.TestCase):
             "# client/acme\n\n## Open threads\n"
             "- **[P0]** send the recap\n"
             "- **[P0 2026-11-04]** post the user flow\n"
-            "- **[WAITING:Laura]** project plan\n"
+            "- **[WAITING:Dana]** project plan\n"
             "- [P1] plain tag still works\n"
             "- an untagged bullet is not a thread\n",
         )

@@ -91,7 +91,7 @@ For each node file in `memory/` (except the entity's own file — we don't self-
    - The bare first name must appear in a contextually consistent passage (same paragraph, or within a section that already references the full name).
    - Apply word-boundary regex to avoid substring matches ("Eric" should not match inside "America").
    - Skip very short first names (≤ 2 letters).
-   - Example: file mentions "Erica Hruby" once, then "Erica" three more times → all four occurrences get wikilinked to `[[person/erica-hruby]]`.
+   - Example: file mentions "Maria Santos" once, then "Maria" three more times → all four occurrences get wikilinked to `[[person/maria-santos]]`.
 4. Build a per-file conversion plan: `[(line_number, old_text, new_wikilink, section), ...]`
 
 Also: track unmatched person-shaped mentions (capitalized "First Last" patterns) that DON'T resolve to any existing person page. These are graduation candidates.
