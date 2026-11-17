@@ -11,7 +11,7 @@ QUIET_SINCE="$(date -v-20d +%Y-%m-%d 2>/dev/null || date -d '20 days ago' +%Y-%m
 LAST_WEEK="$(date -v-6d +%Y-%m-%d 2>/dev/null || date -d '6 days ago' +%Y-%m-%d)"
 
 mkdir -p "$ROOT/memory/client" "$ROOT/memory/me" \
-         "$ROOT/memory/staged/commit-drafts" "$ROOT/archive/$YESTERDAY" \
+         "$ROOT/memory/staged/commit-drafts" "$ROOT/archive/$YESTERDAY/transcripts" \
          "$ROOT/plugins" "$ROOT/briefs" "$HOME/.cortex"
 printf '%s\n' "$ROOT" > "$HOME/.cortex/config-root"
 
@@ -105,7 +105,7 @@ cat > "$ROOT/archive/$YESTERDAY/_index.md" <<EOF
 - transcripts: 1
 EOF
 
-cat > "$ROOT/archive/$YESTERDAY/transcript-northwind-kickoff.md" <<EOF
+cat > "$ROOT/archive/$YESTERDAY/transcripts/northwind-kickoff.md" <<EOF
 # Northwind kickoff — $YESTERDAY
 Dana Reyes: We can share sample course files next week.
 Sample User: I will send the pilot scope summary by Friday.
@@ -129,7 +129,7 @@ Total proposals: 2 across 1 nodes.
 ### Proposal 1 — client/northwind: phase-one budget approved
 - **Type:** INSIGHT
 - **From:** note-taker (mode: transcript)
-- **Source:** archive/$YESTERDAY/transcript-northwind-kickoff.md (line 4)
+- **Source:** archive/$YESTERDAY/transcripts/northwind-kickoff.md (line 4)
 - **Proposed content:**
   > Phase-one budget is approved; phase two depends on the pilot results.
 - **Target placement:** \`client/northwind\` · section \`Knowledge\`
@@ -139,7 +139,7 @@ Total proposals: 2 across 1 nodes.
 ### Proposal 2 — client/northwind: scope summary owed
 - **Type:** commitment
 - **From:** note-taker (mode: transcript)
-- **Source:** archive/$YESTERDAY/transcript-northwind-kickoff.md (line 3)
+- **Source:** archive/$YESTERDAY/transcripts/northwind-kickoff.md (line 3)
 - **Proposed content:**
   > Send the pilot scope summary to Dana Reyes by Friday.
 - **Target placement:** \`client/northwind\` · section \`Open threads\`

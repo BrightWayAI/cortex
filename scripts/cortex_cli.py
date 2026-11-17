@@ -518,6 +518,31 @@ def cmd_memory_diff(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_listen_start(args: argparse.Namespace) -> int:
+    """Start-of-run checks and bookkeeping for /listen. Exit 0 ok, 3 unreachable, 4 already running, 5 lock busy."""
+    import json
+    from datetime import datetime
+
+    from scripts.lib import listen_lifecycle as ll
+
+    root = Path(args.config_root).expanduser()
+    template = Path(__file__).resolve().parent.parent / "references" / "gitignore-template.md"
+    result = ll.start(root, datetime.now().astimezone(), Path.home(), template_path=template, force=args.force,
+                      retries=0 if args.no_wait else 2)
+    print(json.dumps(result, indent=2))
+    return {"ok": 0, "unreachable": 3, "already-running": 4, "busy": 5}[result["status"]]
+
+
+def cmd_listen_finish(args: argparse.Namespace) -> int:
+    """Remove /listen's in-progress marker and its lock. Safe on every exit path."""
+    import json
+
+    from scripts.lib import listen_lifecycle as ll
+
+    print(json.dumps(ll.finish(Path(args.config_root).expanduser(), args.token), indent=2))
+    return 0
+
+
 def cmd_sync(args: argparse.Namespace) -> int:
     root = _resolve_sync_root(args.root)
     report = repo_sync.sync(root, host=args.host)
@@ -672,6 +697,17 @@ def build_parser() -> argparse.ArgumentParser:
     mdiff_p = sub.add_parser("memory-diff", help="Read-only: summary of memory changes since the previous commit, for /morning")
     mdiff_p.add_argument("--config-root", required=True, help="Resolved config root")
     mdiff_p.set_defaults(func=cmd_memory_diff)
+
+    ls_p = sub.add_parser("listen-start", help="/listen start-up: reachability probe, privacy defaults, in-progress marker, write lock")
+    ls_p.add_argument("--config-root", required=True)
+    ls_p.add_argument("--force", action="store_true", help="Replace another run's fresh in-progress marker")
+    ls_p.add_argument("--no-wait", action="store_true", help="Do not wait and retry when the lock is held")
+    ls_p.set_defaults(func=cmd_listen_start)
+
+    lf_p = sub.add_parser("listen-finish", help="/listen shut-down: remove the in-progress marker and the lock")
+    lf_p.add_argument("--config-root", required=True)
+    lf_p.add_argument("--token", required=True, help="The token listen-start returned; only that run's marker and lock are removed")
+    lf_p.set_defaults(func=cmd_listen_finish)
 
     sync_p = sub.add_parser("sync", help="Commit stragglers, pull, and push both repos; log every run")
     sync_p.add_argument("--root")
