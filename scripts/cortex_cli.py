@@ -506,6 +506,18 @@ def cmd_record_decision(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_memory_diff(args: argparse.Namespace) -> int:
+    """Read-only: is memory safe to diff right now, and what changed since the previous commit."""
+    import json
+    from datetime import datetime
+
+    from scripts.lib import memory_diff as md
+
+    root = Path(args.config_root).expanduser()
+    print(json.dumps(md.summarize(root / "memory", datetime.now().astimezone()), indent=2))
+    return 0
+
+
 def cmd_sync(args: argparse.Namespace) -> int:
     root = _resolve_sync_root(args.root)
     report = repo_sync.sync(root, host=args.host)
@@ -656,6 +668,10 @@ def build_parser() -> argparse.ArgumentParser:
     dec_p.add_argument("--revisit-when", help="What would reopen this decision; default n/a")
     dec_p.add_argument("--recorded-by", default="/remember", help="Command that recorded it")
     dec_p.set_defaults(func=cmd_record_decision)
+
+    mdiff_p = sub.add_parser("memory-diff", help="Read-only: summary of memory changes since the previous commit, for /morning")
+    mdiff_p.add_argument("--config-root", required=True, help="Resolved config root")
+    mdiff_p.set_defaults(func=cmd_memory_diff)
 
     sync_p = sub.add_parser("sync", help="Commit stragglers, pull, and push both repos; log every run")
     sync_p.add_argument("--root")
