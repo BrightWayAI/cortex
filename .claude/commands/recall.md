@@ -1,460 +1,118 @@
 ---
-description: Surface working memory into the current conversation. Runs automatically at conversation start to load the user profile and surface attention items. Also runs explicitly via /recall [project] to load full context for a specific project, or /recall alone for the full dashboard. Default load for a project is frontmatter + Current state + Open loops only (v4.16+, Nucleus Operating Model Refactor Phase 2 step 2.2) — pass `--full` to also load the node's Record (full knowledge base, changelog, people, history).
+description: Surface working memory into the current conversation. Runs automatically at conversation start to load the user profile and surface attention items. Also runs explicitly via /recall [project] to load context for a specific project, or /recall alone for the full dashboard. Default load for a project is frontmatter + Current state + Open loops only — pass `--full` to also load the node's Record (full knowledge base, changelog, people, history).
 ---
 
 # /recall $ARGUMENTS
 
-You are surfacing working memory to set up the current session.
+Surface working memory to set up the current session. Layouts for every view are in `references/recall-formats.md`.
 
----
+## Modes
 
-## Mode Detection
+- **Auto** (conversation start, no user trigger): load silently and say only what needs attention. If the first message names a project, load that context; if it is a greeting, show the brief attention summary; if it is a direct task, load what is relevant and weave it in.
+- **Explicit** (the user types `/recall`): the full dashboard, or the project, person, or topic asked for, with complete detail.
+- **Contextual** (a project, person, or topic comes up mid-conversation): no recall block. Weave in what is relevant.
 
-This command runs in one of three modes:
+## Step 0 — Load the hot cache and user profile (always, first)
 
-### Auto mode (conversation start — no user trigger)
-- Silently load the user profile node first (apply preferences to behavior)
-- Check for attention items (overdue P0s, stale threads, dormant nodes reviving)
-- If the user's first message references a specific project → load that context
-- If the user's first message is a greeting → show brief attention summary
-- If the user's first message is a direct task → load relevant context silently, weave in
-- Keep output SHORT — just what needs attention
+Resolve `<config-root>` per `references/core-contract.md` §1. If `<config-root>/memory/` cannot be reached, say that memory cannot be loaded without it and stop; if a host needs folder access granted, request it for the resolved root, not for a hard-coded path. If the memory directory does not exist or is empty, say so and offer to help set it up.
 
-### Explicit mode (user says /recall)
-- Full dashboard or project recall as specified
-- Complete output with all details
+1. Read `<config-root>/memory/hot.md` if it exists (skip it if missing or `hot_cache.enabled: false`). It is the rolling 7-day buffer: recent reflections, active people, open threads, commitments.
+2. Read `<config-root>/memory/me/user.md` if it exists.
 
-### Contextual mode (mid-conversation reference)
-- User mentions a project, person, or topic with memory
-- Don't dump a recall block — weave relevant knowledge into your response naturally
-- Only surface what's relevant to the current discussion
+Apply both immediately and silently: communication preferences, working style, corrections, tool preferences, who is who, and recent activity (do not ask "what have you been working on" when the cache says). **Do not announce this.**
 
----
+**Pending overnight draft.** If `<config-root>/memory/staged/commit-drafts/` holds a file dated yesterday or today that is not in `staged/commit-drafts/archive/`, end the auto-recall with one line: "Heads up: overnight `/listen` proposals are pending. Run `/morning` when you're ready." Do not list the proposals.
 
-## Step 0 — Load hot cache + User Profile (ALWAYS, before anything else)
+## What to read for each form
 
-Resolve `<config-root>` per `references/core-contract.md` §1.
+Node IDs map to files: `client:acme-corp` → `memory/client/acme-corp.md`; no prefix (`hiring`) → `memory/hiring.md`.
 
-**Hot cache (v4.7+):** Read `<config-root>/memory/hot.md` first if it exists. This is the rolling 7-day buffer of recent substrate — last week's reflections, active people, open threads, recent commitments. Apply immediately and silently for context awareness.
+- `/recall` → `memory/DASHBOARD.md`; show the dashboard.
+- `/recall <node>` → that node's file; show the project view within the load boundary below.
+- `/recall person:<slug>` → `memory/person/<slug>.md`; if there is none, fall through to `@name`.
+- `/recall @name` → find the nodes in DASHBOARD.md, then search their PEOPLE entries.
+- `/recall <topic>` → use DASHBOARD.md to pick the likely nodes, then search their knowledge entries and LOGs.
 
-If `hot.md` is missing or `hot_cache.enabled: false` in user-context, skip it gracefully and continue with the User Profile load.
+## A project (`/recall client:acme`)
 
-**User Profile:** Read `<config-root>/memory/me/user.md` if it exists.
+**Default load boundary.** Load only frontmatter, `## Current state` (or legacy `## Summary`), and `## Open loops` (or legacy `## Next Actions` P0/P1 plus `## Open Threads`). Stop at a `---` divider followed by `## Record` — do not read past it. If the Record lives in a sibling `<node>.record.md` file, do not open that file at all in default mode.
 
-Apply immediately and silently:
-- Communication preferences → adjust your response style
-- Working style → match their pace and patterns
-- Corrections → avoid past mistakes
-- Tool preferences → use their preferred tools/platforms
-- Relationship context → know who's who
-- Recent activity from hot.md → don't ask "what have you been working on" when the cache already says
+**`--full`** also loads the Record (or the sibling file): every knowledge entry (INSIGHT, LESSON, MODEL, GOTCHA, RECIPE, CORRECTION, DECISION pointers), PEOPLE, Changelog, all Open Threads and Next Actions, and SIGNALs.
 
-**Do NOT announce this.** Just be the version of Claude they've trained you to be.
+**Nodes not yet restructured** (no `## Current state`, no Record divider) behave exactly as before: full-file load, no behavior change.
 
-**Pending overnight draft check (v4.7+):** If `<config-root>/memory/staged/commit-drafts/` contains a file dated yesterday or today that hasn't been archived to `staged/commit-drafts/archive/`, a `/listen` run is pending review. At the end of the auto-recall flow (after Step 0 completes silently), surface ONE short line: "Heads up: overnight `/listen` proposals are pending. Run `/morning` when you're ready." Do not enumerate the proposals; just flag.
+Then:
 
----
+1. Compute staleness from the last update: **Active** within 7 days, **Warm** 8–14, **Cooling** 15–30, **Dormant** 30+.
+2. Present the **Project view**. Knowledge entries are grouped by type, up to 5 most recent per group with "N more"; P0 actions are highlighted; threads are marked FRESH, ONGOING, or STALE, and STALE ones get a warning.
+3. In default mode on a restructured node, the knowledge, people, sessions, and signals sections are thin or empty because that content is in the unloaded Record. Show Current State and the open loops as the substance, note once "Full history in Record — run `/recall <node> --full` for it.", and omit empty sections; do not render them with apologetic placeholder text.
+4. End with **"What are we working on today?"**
 
-### Finding Memory
+## No project (`/recall`)
 
-Memory is stored in `<config-root>/memory/`.
+Show the **Dashboard**: nodes sorted by recency (Active in detail; Warm, Cooling, and Dormant in less), then Needs Attention (STALE threads, overdue P0s, unresolved blockers), Recent Learning (the 3–5 most recent INSIGHT, LESSON, or GOTCHA entries across all nodes), Cross-Project Signals, and People Across Projects (anyone in 2+ nodes). End with **"Which project are we picking up today?"**
 
-**Before reading**: Check if `<config-root>/memory/` is accessible.
-- **Cowork**: Use `mcp__cowork__request_cowork_directory(path="~/Documents/Claude")` to request access. Wait for the user to approve.
-- **Claude Code**: The directory is accessible directly via the filesystem.
+## A person (`/recall person:<slug>` or `/recall @name`)
 
-If the directory cannot be accessed, explain that memory cannot be loaded without this folder and stop.
+- **Page exists** → show the **Person page** view: identity, how you know each other, open threads, the top 5 interactions from the last 90 days, linked projects, notes.
+- **No page** → show the **Cross-project profile** (projects and roles, recent mentions, open items involving them), then: "No person page for <slug> yet. After 3 recalls I'll offer to graduate them."
 
-- `/recall` with no arguments: Read `memory/DASHBOARD.md` and present the dashboard view
-- `/recall [node]`: Determine file path from node ID, read that file, present the full project view
-  - If node has a prefix (e.g., `client:acme-corp`): `memory/{prefix}/{slug}.md`
-  - If no prefix (e.g., `hiring`): `memory/{node-id}.md`
-- `/recall person:<slug>` (v4.2+): Read `memory/person/<slug>.md`. If it exists, present the full person page (Identity → Relationship → Open threads → Recent interactions → Notes → Linked entities). If it doesn't, fall through to `/recall @<name>` behavior. **Increment the recall counter for this slug** at `memory/.person-recall-counter.json` (see "Person-page graduation counter" below). When the counter hits 3 for a person who has no page yet, prompt: "I've recalled <name> 3 times. Want to graduate them to a person page?" → if yes, run a one-shot synthesis pass over all node files mentioning them to seed the page.
-- `/recall @person`: Read DASHBOARD.md to find which nodes exist, then search node files for PEOPLE entries matching the name. **Also increment the recall counter** as above so casual `@person` recalls still count toward graduation trigger #2.
-- `/recall [topic]`: Read DASHBOARD.md to identify which nodes might be relevant, then search those node files for matching knowledge entries
+**Recall counter.** Every recall that names a person, in either form, increments their entry in `<config-root>/memory/.person-recall-counter.json` (create the file if missing; a new slug starts at `{count: 1, last_recalled_at: now}`). The file is private to cortex.
 
-If the memory directory doesn't exist or is empty, tell the user and offer to help set it up.
+- Count reaches 3 **and no page exists** → after the profile, ask: "I've recalled <name> 3 times now. Want to graduate them to a person page? I'll synthesize a starting page from existing mentions across nodes." On yes: scan the node files for PEOPLE entries matching the name, write `memory/person/<slug>.md` following the person-page schema, add an "Active people" entry to DASHBOARD.md, and reset the count to 0. Never create the page without that yes.
+- A page already exists → still increment (it tells `/cleanup` which pages are cold), but do not prompt.
 
----
+## A topic (`/recall pricing`)
 
-## If a project was specified (e.g. `/recall client:acme`, `/recall strategy:q2-growth`)
+Search knowledge entries and LOGs for the topic and show the **Topic** view (models, lessons and insights, gotchas, recipes, corrections, and the nodes it appears in). End with **"Want to dive deeper or add to what we know?"**
 
-**Default load boundary (v4.16+).** Read the node file, but only load: frontmatter, `## Current state` (or the legacy `## Summary` on nodes not yet restructured), and `## Open loops` (or legacy `## Next Actions` P0/P1 + `## Open Threads`). Stop at a `---` divider followed by `## Record` — do not read past it. If the node's Record lives in a sibling `<node>.record.md` file (nodes over 40KB at restructure time, e.g. `client/aurora-labs.record.md`, `studio.record.md`), do not open that file at all in default mode.
+**Duplicate-topic check, before the answer.** Send the query and DASHBOARD.md's Active Nodes summaries (node ID plus one line each) to the low-cost classifier: "Given the query `<query>` and these node summaries: `<list>`, return the single closest semantic match if any node summary is plausibly about the same topic. Otherwise return `null`. Output exactly `{"match": "<node-id>"}` or `{"match": null}` — no other text." If it names a node this recall is not already showing, put one line first: "Note: `<matched-node>` may already cover this. Want to read that first?" Then give the topic answer.
 
-**`/recall <node> --full`** loads everything: the full Record section (or sibling `.record.md` file) in addition to Current state — the full knowledge base (INSIGHT/LESSON/MODEL/GOTCHA/RECIPE/CORRECTION), PEOPLE, Changelog, full Open Threads/Next Actions, SIGNALs. Use this when you need history, not just current status.
+## Auto-recall at conversation start
 
-**Nodes not yet restructured** (no `## Current state` / no Record divider) behave exactly as before — full-file load, no behavior change. This only applies once a node has been split.
+Read DASHBOARD.md and present the **Auto-recall** summary:
 
-1. Read the node file from the memory directory (respecting the load boundary above)
-2. Pull (in `--full` mode): SUMMARY, recent LOGs, all knowledge entries (INSIGHT/LESSON/MODEL/GOTCHA/RECIPE/CORRECTION), PEOPLE, SIGNALs
-
-3. Compute staleness:
-   - **Active**: within 7 days
-   - **Warm**: 8-14 days
-   - **Cooling**: 15-30 days
-   - **Dormant**: 30+ days
-
-4. Present:
-
-```
-## [Project Node] — [today's date] [staleness badge]
-
-**Current State**
-[living summary]
-
-**What We Know**
-[Knowledge entries grouped by type. Show up to 5 most recent, note "N more" if needed.]
-
-Models:
-- [MODEL entry]
-
-Gotchas:
-- [GOTCHA entry]
-
-Lessons:
-- [LESSON entry]
-
-Recipes:
-- [RECIPE entry]
-
-Corrections:
-- [CORRECTION entry]
-
-Insights:
-- [INSIGHT entry]
-
-**Blockers**
-[active blockers, or "None"]
-
-**Open Threads** ([count])
-- [FRESH/ONGOING/STALE] [thread]
-
-**Next Actions**
-- [P0] [action] ← HIGHLIGHT
-- [P1] [action]
-- [P2] [action]
-- [WAITING:who] [action]
-
-**Unanswered Questions**
-[from prior sessions, or "None"]
-
-**Key People**
-- [Name] ([role]) — [context]
-
-**Recent Sessions**
-- [date] [title]: [1-line summary]
-- [date] [title]: [1-line summary]
-- [date] [title]: [1-line summary]
-
-**Signals from other projects**
-[cross-project flags, or "None"]
-```
-
-**In default (non `--full`) mode on a restructured node:** `What We Know`, `Key People`, `Recent Sessions`, and `Signals from other projects` will be thin or empty since that content lives in the unloaded Record — render `Current State` (from `## Current state`) and `Open Threads`/`Next Actions` (from `## Open loops`) as the substance, and note once: "Full history in Record — run `/recall <node> --full` for it." Don't render empty sections with apologetic placeholder text; just omit them.
-
-5. Flag [STALE] threads with a warning.
-6. End with: **"What are we working on today?"**
-
----
-
-## If no project specified (just `/recall`)
-
-Full working world dashboard. Sort by recency.
-
-```
-## Working World — [today's date]
-
-### Active (within 7 days)
-
-**[node-id]** [badge]
-[summary — 1-2 sentences]
-Knowledge: [count] entries
-Open threads: [count]
-Next up: [top action]
-
-...
-
-### Warm / Cooling / Dormant
-[same format, less detail]
-
----
-
-### Needs Attention
-[STALE threads, overdue P0s, unresolved blockers]
-
-### Recent Learning
-[3-5 most recently committed INSIGHT/LESSON/GOTCHA entries across ALL nodes]
-
-### Cross-Project Signals
-[Recent SIGNALs]
-
-### People Across Projects
-[Anyone in 2+ nodes]
-```
-
-End with: **"Which project are we picking up today?"**
-
----
-
-## If a person page was specified (`/recall person:sarah-chen`) — v4.2+
-
-1. Read `memory/person/<slug>.md` if it exists.
-2. If it exists, present:
-
-```
-## [Name] — person page
-
-> Last updated: [date] · Temperature: [Cold|Warm|Active|Dormant]
-
-**Identity** — [title], [company link]. [email]
-**How we know each other** — [relationship line]
-
-**Open threads**
-- [WAITING:them] — [thread]
-- [WAITING:you] — [thread]
-- [P0] — [thread]
-
-**Recent interactions (last 90 days)**
-- [date] — [type] — [summary]
-- ... (top 5)
-
-**Linked projects** — [client/...], [bizdev/...]
-
-**Notes**
-[free-form]
-```
-
-3. If the page doesn't exist, fall through to the legacy `@person` cross-project profile below. Then surface the recall-counter check: "No person page for <slug> yet. After 3 recalls I'll offer to graduate them." (Show counter status if available.)
-
-4. **Increment the recall counter** at `memory/.person-recall-counter.json`:
-
-   ```json
-   {
-     "sarah-chen": { "count": 4, "last_recalled_at": "2026-05-12T14:23:00Z" },
-     "tom-reyes": { "count": 2, "last_recalled_at": "2026-05-10T09:11:00Z" }
-   }
-   ```
-
-   - Read the file (create if missing). Look up the slug. If absent, initialize `{count: 1, last_recalled_at: now}`. Otherwise increment count, update timestamp.
-   - **If count crosses 3 AND no page exists yet** → after rendering the legacy profile, ask: "I've recalled <name> 3 times now. Want to graduate them to a person page? I'll synthesize a starting page from existing mentions across nodes." If yes, scan all project node files for PEOPLE entries matching the name, synthesize an initial page following the schema in cortex's CLAUDE.md, write to `memory/person/<slug>.md`, add an "Active people" entry to DASHBOARD.md, and reset the counter for this slug to `count: 0` (since the page now exists).
-   - **If a page already exists** → still increment the counter (useful telemetry for `/cleanup` to identify cold pages later) but don't prompt.
-
----
-
-## If a person was specified (`/recall @kim`) — legacy cross-project profile
-
-```
-## [Name] — Cross-Project Profile
-
-**Projects:** [node-id]: [role]. [node-id]: [role].
-
-**Recent mentions:** [date] in [node]: [context]
-
-**Open items involving them:** [WAITING:them] [description]
-```
-
-Apply the same recall-counter increment described in the person-page section above. If the counter crosses 3 for a person with no page yet, offer to graduate.
-
----
-
-## Person-page graduation counter (v4.2+)
-
-`memory/.person-recall-counter.json` is a small JSON map keyed by slug. Cortex maintains it as part of any recall that names a person (`person:slug` or `@name` form). The file is private to cortex; other plugins should treat it as opaque.
-
-When the counter for a slug crosses 3 and `memory/person/<slug>.md` does not yet exist, the next `/recall` for that person surfaces the graduation prompt. Other graduation triggers (dossier from contact-researcher, project-setup primary contact, etc.) bypass the counter and create the page directly.
-
----
-
-## If a topic/keyword was specified (`/recall pricing`, `/recall onboarding`)
-
-Search all knowledge entries + LOGs for the topic.
-
-```
-## What we know about: [topic]
-
-**Mental Models**
-[MODEL entries]
-
-**Lessons & Insights**
-[LESSON/INSIGHT entries]
-
-**Gotchas**
-[GOTCHA entries]
-
-**Recipes**
-[RECIPE entries]
-
-**Corrections**
-[CORRECTION entries]
-
-**Appears in:** [nodes where this comes up]
-```
-
-End with: **"Want to dive deeper or add to what we know?"**
-
-### Duplicate-topic surfacing (v4.2+)
-
-Before rendering the topic answer above, run a one-pass low-cost/fast-tier semantic check (Claude adapter: Haiku) to catch the user re-discovering ideas they already wrote about:
-
-1. Read DASHBOARD.md's Active Nodes section (just the node-id + 1-line summary per row).
-2. Send the query + the dashboard summaries to the low-cost/fast-tier classifier with this prompt:
-
-   > Given the query `<query>` and these node summaries: `<list>`, return the single closest semantic match if any node summary is plausibly about the same topic. Otherwise return `null`. Output exactly `{"match": "<node-id>"}` or `{"match": null}` — no other text.
-
-3. If `match` is non-null AND the matched node is NOT one the recall just rendered:
-
-   > Surface a heads-up BEFORE the main topic answer:
-   >
-   > "Note: `<matched-node>` may already cover this. Want to read that first?"
-   >
-   > Then continue rendering the regular topic answer below the note.
-
-4. If `match` is null, render the topic answer normally. No note.
-
-Cost: one low-cost/fast-tier call per topic recall (~$0.01). Trade-off: catches "I forgot I already wrote about this" cases ~80% of the time, in exchange for one cheap classification call per topic query.
-
----
-
-## If auto-recall at conversation start (greeting or general opening)
-
-Read `DASHBOARD.md` and scan for attention items. Present a BRIEF summary:
-
-```
-Welcome back. Here's what needs attention:
-
-**Overdue**
-- [P0 action] in [node] — was due [date]
-
-**Stale**
-- [thread] in [node] — no progress in [count] sessions
-
-**Recent**
-- Last worked on [node] ([date]): [1-line summary]
-
-What are we working on?
-```
-
-Rules for auto-recall output:
 - **Maximum 8 lines.** This is a glance, not a report.
-- If nothing needs attention: "All clear — what are we working on?"
-- Only show overdue P0s (not P1/P2), stale threads (3+ sessions), and the 1-2 most recent sessions
-- If the user profile has relationship context relevant to today (e.g., a known meeting cadence), weave it in
-- Never show the full dashboard in auto mode — that's what explicit `/recall` is for
+- Only overdue P0s (not P1 or P2), threads stale for 3+ sessions, and the 1–2 most recent sessions.
+- Nothing needs attention → "All clear — what are we working on?"
+- Weave in anything from the user profile that matters today, such as a known meeting cadence.
+- Never show the full dashboard in auto mode, and never offer the aging-entries triage.
 
----
+## Contextual recall
 
-## If contextual recall (mid-conversation mention)
+Read the relevant node, pick the 1–3 entries that bear on what is being discussed, and weave them into the response naturally — don't format as a recall block. Example: the user says "I need to follow up with Acme"; memory says their procurement needs three quotes; say "Heads up — Acme's procurement requires 3 vendor quotes even for renewals, so factor in 2 weeks lead time." Having memory does not mean dumping it.
 
-When the user mentions a project, person, or topic with memory:
+## `[recalled:...]` tags
 
-1. Read the relevant node file
-2. Identify the 1-3 most relevant knowledge entries for the current context
-3. Weave them into your response naturally — don't format as a recall block
-4. Example: User says "I need to follow up with Acme" → you know from memory their
-   procurement needs 3 quotes → say "Heads up — Acme's procurement requires 3 vendor
-   quotes even for renewals, so factor in 2 weeks lead time."
-5. Only surface what's RELEVANT. Having memory doesn't mean dumping memory.
+Whenever a knowledge entry is shown to the user, set its `[recalled:YYYY-MM-DD]` tag to today.
 
----
+- Only the `[recalled:...]` tag changes. `[confirmed:...]` needs an explicit re-confirmation.
+- Update only entries the user actually saw, not every entry read for context.
+- An entry with no tags gets both: `[confirmed:<original-date>] [recalled:<today>]`.
+- These are in-place edits to the node file, idempotent. Don't announce tag updates to the user.
+
+## Aging entries
+
+Classify each rendered knowledge entry by the age of its `[confirmed:...]` date, using the thresholds, type modifiers, and node `decay_profile` defined in `references/decay-model.md` (`effective_threshold = base_threshold × type_modifier × decay_profile_multiplier`; a modifier of 0, as for CORRECTION, means never flagged). Thresholds come from `<config-root>/memory/.decay-config.md`; if it is missing, create it with the documented defaults. Don't prompt the user about that.
+
+| Age | State | Flag appended to the rendered line |
+|---|---|---|
+| below `threshold_fresh` | Fresh | none |
+| up to `threshold_dormant` | Stale | ` [stale-confidence]` |
+| up to `threshold_cold` | Dormant | ` [dormant — last confirmed <N> days ago]` |
+| beyond | Cold | ` [cold — last confirmed <N> days ago; consider rehearse or archive]` |
+
+The flag is display-only; it does NOT get written into the entry text. Entries under `## Demoted knowledge` are shown after the active sections, headed "Below: entries previously demoted. Kept for reference; not surfaced as active knowledge.", and are left out of counts and highlights.
+
+**Triage offer.** Only when the user ran `/recall` explicitly and some entries are flagged, show the **Triage offer** block. Do NOT offer this in auto-recall mode or for contextual recall.
+
+- **(r)e-confirm** → set `[confirmed:<today>]` on every flagged entry; confirm in one line.
+- **(s)elect** → one entry at a time: `(c)onfirm / (d)emote / (a)rchive entry / (s)kip / (e)dit then confirm`. Demote moves the entry, with its tags, to the node's `## Demoted knowledge` section (create it if missing) and appends `↳ demoted <today> by user-recall-action`. There is no entry-level archive: treat it as demote plus a note that the user asked for removal, and point to `/forget` for archiving a whole node.
+- **(d)emote all dormant + cold** → move every Dormant and Cold entry to its node's `## Demoted knowledge`; Stale entries stay.
+- **(k) skip** → no changes.
 
 ## Behavior notes
 
-- No entries → say so, ask if they want to start building context
-- Sparse memory → surface what exists, note it'll improve with each session
-- Don't editorialize — surface committed data accurately
-- Human-readable dates ("March 4")
-- Knowledge entries are high-signal — show them prominently, not buried
-- Stale threads or overdue P0s → flag proactively
-- User profile → apply silently, never announce
-- Auto-recall → be brief, be useful, get out of the way
-
-## `[recalled:...]` tag updates (v4.3+)
-
-When `/recall` (any mode) renders a knowledge entry from a node file, update that entry's `[recalled:YYYY-MM-DD]` tag to today's local date before exiting. This is the substrate for v4.4's decay layer — entries that get recalled stay fresh; entries that don't get recalled drift toward demotion.
-
-Rules:
-- Only the `[recalled:...]` tag changes. The `[confirmed:...]` tag stays put — confirmation is a stronger signal that requires an explicit re-affirmation event.
-- Auto-recall and Contextual recall update tags only on entries actually rendered to the user, not on every entry read internally for context. The threshold is "did the user see this?"
-- If an entry pre-dates v4.3 and has no tags, add both `[confirmed:<original-date>] [recalled:<today>]` — backfill the substrate as you touch entries.
-- Updates are append-style edits to the existing node file. No new file writes. Idempotent.
-
-This work happens silently. Don't announce tag updates to the user.
-
-## Decay-aware rendering (v4.4+)
-
-`/recall` now classifies every knowledge entry it renders into one of four states based on the age of `[confirmed:...]` and the effective threshold for the entry's type and the node's `decay_profile`. See `references/decay-model.md` for the full model.
-
-### Loading thresholds
-
-Before rendering, read `<config-root>/memory/.decay-config.md` (create with documented defaults if missing). Extract:
-
-- `threshold_fresh`, `threshold_dormant`, `threshold_cold` (in days)
-- `type_modifiers` (per-entry-type multipliers — `CORRECTION: 0` means immune to decay)
-
-For each node being rendered, check its front-matter for `decay_profile:` (values: `fast` = 0.5, `normal` = 1.0, `slow` = 2.0, or numeric). The effective threshold for an entry is:
-
-```
-effective_threshold = base_threshold × type_modifier × decay_profile_multiplier
-```
-
-If `type_modifier` is 0 (CORRECTION), the entry is never flagged regardless of age.
-
-### State classification
-
-For each entry, compute `age_days = today - confirmed_date`. State:
-
-| age_days vs. thresholds | State |
-|---|---|
-| `< threshold_fresh` | Fresh |
-| `threshold_fresh ≤ age < threshold_dormant` | Stale |
-| `threshold_dormant ≤ age < threshold_cold` | Dormant |
-| `age ≥ threshold_cold` | Cold |
-
-Entries in the `## Demoted knowledge` section are skipped from active rendering (rendered separately and de-emphasized — see "Rendering demoted entries" below).
-
-### Render flag inline
-
-Append a state flag at the end of each entry's rendered line (only for Stale / Dormant / Cold — Fresh entries render unflagged):
-
-- Stale → ` [stale-confidence]`
-- Dormant → ` [dormant — last confirmed <N> days ago]`
-- Cold → ` [cold — last confirmed <N> days ago; consider rehearse or archive]`
-
-The flag is rendering-only — it does NOT get written into the entry text. The entry's underlying line stays unchanged; the flag is decorative on the recall output.
-
-### Recall-time triage offer
-
-After rendering all entries, if any are flagged Stale / Dormant / Cold AND the user invoked `/recall` explicitly (not auto-recall, not contextual), offer:
-
-> "[N] entries flagged as aging:
->  [N_stale] stale · [N_dormant] dormant · [N_cold] cold
->
->  Triage now?
->  (r)e-confirm — mark them all as confirmed today
->  (s)elect — walk one by one, choose per entry
->  (d)emote all dormant + cold — move to Demoted knowledge sections
->  (k)skip — leave as-is; they'll resurface on next recall or rehearsal"
-
-Do NOT offer this in auto-recall mode (the user is greeting you; don't interrupt with a triage prompt). Do NOT offer for contextual recall either (mid-conversation references shouldn't break flow).
-
-### Per-action behavior
-
-- **Re-confirm all** → for each flagged entry, update `[confirmed:<today>]`. Print a one-line confirmation.
-- **Select** → walk one entry at a time, prompt per entry:
-  > "<entry text>
-  >  (c)onfirm / (d)emote / (a)rchive entry / (s)kip / (e)dit then confirm"
-  - `confirm` — update `[confirmed:<today>]`
-  - `demote` — move entry to the node's `## Demoted knowledge` section (create if missing). Append demotion metadata: `↳ demoted <today> by user-recall-action`. Original tags travel with the entry.
-  - `archive entry` — there's no entry-level archive; this is the same as `demote` plus a note that the user asked to remove it. (For node-level archive, point user to `/forget`.)
-  - `edit then confirm` — drop into inline edit; on save, update `[confirmed:<today>]`
-  - `skip` — leave as-is
-- **Demote all dormant + cold** → bulk move every Dormant and Cold entry to `## Demoted knowledge` in its respective node. Stale entries stay active.
-- **Skip** → no changes.
-
-### Rendering demoted entries
-
-In project-view and topic-view recall, render the `## Demoted knowledge` section AFTER the active sections, with a header note: "Below: entries previously demoted. Kept for reference; not surfaced as active knowledge." Don't include demoted entries in knowledge-entry summary counts or in "What We Know" highlights.
-
-### Auto-create `.decay-config.md` if missing
-
-On first `/recall` after v4.4 lands, if `<config-root>/memory/.decay-config.md` doesn't exist, create it with the documented defaults from `references/decay-model.md`. Don't prompt the user — defaults are sensible; user can tune later.
+- No entries → say so and ask whether to start building context. Sparse memory → show what exists.
+- Surface committed data accurately; don't editorialize. Use human-readable dates ("March 4").
+- The only files this command writes are the node files it updates tags or demotions in, the recall counter, and a missing `.decay-config.md`.

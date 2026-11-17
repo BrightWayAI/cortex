@@ -4,6 +4,20 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.41.0] — /recall trimmed (2026-11-16)
+
+### Changed
+- `/recall` is 1,694 words, down from 3,105, with the same modes and rules. Version tags are gone, the six output layouts moved to `references/recall-formats.md`, the person recall counter is described once instead of three times, and the decay formula points to `references/decay-model.md` instead of restating it.
+
+### Fixed
+- The folder-access step named `~/Documents/Claude`, a hard-coded path that is not the config root. It now requests access for the resolved config root.
+- "No new file writes" contradicted the two files the command creates. The command now states exactly what it writes: tag and demotion edits in node files, the recall counter, and a missing `.decay-config.md`.
+- `--full` lists DECISION pointers among the entries it loads.
+- "Read that file, present the full project view" contradicted the default load boundary; the default view is now described as bounded.
+
+### Added
+- Eval `recall-person-and-aging`.
+
 ## [4.40.1] — Baseline evals for the long commands (2026-11-16)
 
 ### Added
