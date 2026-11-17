@@ -4,6 +4,29 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.44.0] — /remember trimmed and its contradictions resolved (2026-11-17)
+
+`/remember` cut from 7,019 to 2,107 words. Prompts, extraction lists, file
+formats and procedures moved to `references/remember-formats.md`. Step numbers
+are unchanged.
+
+### Changed
+- When the user types `/remember` and triage finds nothing worth saving, it
+  says so in one line. Silent (auto) runs still say nothing.
+- Outdated or contradicted entries are demoted to `## Demoted knowledge`, never
+  removed. The "update/remove the old entry" wording is gone from knowledge
+  mode, the continuity check, the user node and memory hygiene.
+- Knowledge mode writes a decision through `record-decision`, as full mode
+  does, instead of the pre-4.38 inline format.
+- Section writes are described as the CLI performs them: changelog lines are
+  added newest first with `prepend-section`; knowledge entries are added under
+  their type heading with `append-section`.
+- A held write lock: retry once, then report that nothing was saved and stop.
+  The "wait or override?" prompt had no override behind it and is removed.
+
+### Added
+- `evals/remember-nothing-to-save`.
+
 ## [4.43.0] — /end-day trimmed and its contradictions resolved (2026-11-17)
 
 `/end-day` cut from 8,913 to 2,493 words. Formats, tables and procedures moved
