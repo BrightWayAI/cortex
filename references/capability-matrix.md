@@ -129,6 +129,30 @@ with the concrete tool name pushed into the per-host column here.
 | Reads/writes external state | Reads. |
 | Confirmation policy | One-time authorization at connector setup; no per-run confirmation. |
 
+### `connector.finance.read`
+
+| | |
+|---|---|
+| Required or optional | Optional — used by `/listen` Step 1 to archive the day's invoice, payment and estimate metadata (`references/listen-business-sources.md`). |
+| Claude Code / Cowork | Provided by an accounting MCP server if configured (e.g. QuickBooks invoice, payment-link and aging-summary read tools). |
+| Codex | Not wired (portability work is frozen); treated as unavailable. |
+| ChatGPT Work | Not wired (portability work is frozen); treated as unavailable. |
+| Behavior when unavailable | `/listen` lists the source as skipped in `_index.md` and continues. Never fatal. |
+| Reads/writes external state | Reads only. `/listen` never writes to this system. |
+| Confirmation policy | One-time authorization at connector setup, plus an explicit opt-in under `listen.business_sources`; no per-run confirmation. |
+
+### `connector.tables.read`
+
+| | |
+|---|---|
+| Required or optional | Optional — used by `/listen` Step 1 to archive records changed in watched Airtable tables. |
+| Claude Code / Cowork | Provided by an Airtable MCP server if configured (list and search record tools). |
+| Codex | Not wired (portability work is frozen); treated as unavailable. |
+| ChatGPT Work | Not wired (portability work is frozen); treated as unavailable. |
+| Behavior when unavailable | `/listen` lists the source as skipped in `_index.md` and continues. Never fatal. |
+| Reads/writes external state | Reads only. `/listen` never writes to this system. |
+| Confirmation policy | One-time authorization at connector setup, plus an explicit opt-in under `listen.business_sources`; no per-run confirmation. |
+
 ### `connector.crm.write`
 
 | | |

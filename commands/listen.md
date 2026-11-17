@@ -50,6 +50,7 @@ For each source enabled in `<config-root>/plugins/cortex.user-context.md` and `/
 - **Gmail** → `inbox.md`. `after:<target_date> before:<target_date+1> (to:me OR cc:me)` where the user is not the latest sender. Cap 50 threads. Metadata plus a 200-character snippet; full body only if `listen.inbox.full_body: true`.
 - **Slack** (optional) → `slack.md`, grouped by channel. Messages from `target_date` that mention the user or that the user wrote. Cap 100.
 - **Drive** (optional) → `drive.md`. Files created or modified on `target_date` in watched folders. Metadata only.
+- **CRM, finance, Airtable** (optional) → `crm.md`, `finance.md`, `airtable.md`, per `references/listen-business-sources.md`. Read-only: never create or change a record in these systems. Records changed on `target_date` only; names, IDs, dates, statuses and amounts, never note or comment text. CRM is on when connected; finance and Airtable only when enabled under `listen.business_sources`.
 - **Transcripts** → `transcripts/<meeting-id>-<slug>.md`, one per meeting, with front-matter (source adapter, original ID, title, participants, date) and the transcript. One query per configured adapter, per `references/note-source-adapters.md`.
 
 Skip an adapter `/setup-sources` marked unhealthy and note it. Log each failed source under `## Errors` in `_index.md` and continue with what was pulled.
@@ -111,7 +112,7 @@ Invoke `note-taker` once per mode. Every mode is read-only against the archive a
 |---|---|---|---|
 | `transcript` | `archive/<target_date>/transcripts/` | active person pages; open threads on project and client nodes | knowledge entries, commitments to and from others, person-page updates |
 | `conversation` | Cowork session metadata for `target_date` (session-info MCP, if available) | active project nodes | knowledge entries, user-observation updates |
-| `activity` | `calendar.md`, `inbox.md`, `slack.md`, `drive.md` | active person, client, and topic nodes | person-page entries, open-thread updates, commitments |
+| `activity` | `calendar.md`, `inbox.md`, `slack.md`, `drive.md`, `crm.md`, `finance.md`, `airtable.md` | active person, client, and topic nodes | person-page entries, open-thread updates, commitments |
 
 Combine the three proposal lists.
 
@@ -204,7 +205,7 @@ Exit 0 on success; non-zero only for a hard failure (root unreachable, every sou
 
 - **No interactive prompts,** including for brief mining. Errors go to `_index.md`, the health line, and the receipt.
 - **Idempotent on the archive.** Re-running a date without `--rewrite` is a no-op; `--remine` is always allowed against an existing archive.
-- **Privacy-conservative.** Metadata only for inbox and Slack unless the user opted in to full bodies.
+- **Privacy-conservative.** Metadata only for inbox and Slack unless the user opted in to full bodies. Amounts from `finance.md` stay in the archive: a proposal may say an invoice was sent, paid or overdue, never how much.
 - **Never modify active memory.** Proposals stage to `staged/commit-drafts/`; the only direct writes are the record-keeping listed in `references/listen-brief-mining.md`.
 - **Verification informs, it does not decide.** A `pass` merges nothing and a `fail` deletes nothing.
 - It does not run web research (`/research-gaps`), render or call `/brief`, or chain into `/morning`.

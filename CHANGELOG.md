@@ -4,6 +4,27 @@ All notable changes to the Cortex Plugin are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions match `plugin.json`.
 
+## [4.45.0] — /listen business sources: CRM, finance, Airtable (2026-11-17)
+
+`/listen` can now archive three business sources each night: the CRM
+(`crm.md`), the accounting system (`finance.md`) and watched Airtable tables
+(`airtable.md`). GitHub was dropped from this item by owner decision.
+
+### Added
+- `references/listen-business-sources.md`: what each source pulls, the file
+  formats, and the rules.
+- `connector.finance.read` and `connector.tables.read` in the capability
+  matrix (Claude only; portability stays frozen).
+- `evals/listen-business-sources`.
+
+### Rules
+- Read-only: `/listen` never creates or changes a record in these systems.
+- Metadata only, for records changed that day, capped at 50 rows per section.
+- CRM is on when connected. Finance and Airtable are off until enabled under
+  `listen.business_sources` in `cortex.user-context.md`.
+- Amounts in `finance.md` stay in the private archive and never appear in a
+  memory proposal.
+
 ## [4.44.0] — /remember trimmed and its contradictions resolved (2026-11-17)
 
 `/remember` cut from 7,019 to 2,107 words. Prompts, extraction lists, file
